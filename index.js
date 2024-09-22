@@ -85,6 +85,10 @@ const swaggerDefinition = {
       url: "http://localhost:5000",
       description: "Development server",
     },
+    {
+      url: "https://everfresh-server.onrender.com",
+      description: "Production server",
+    },
   ],
 };
 
