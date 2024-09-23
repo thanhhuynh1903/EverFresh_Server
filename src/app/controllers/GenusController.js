@@ -9,7 +9,8 @@ const createGenus = asyncHandler(async (req, res) => {
     // Check if genus with the same name already exists
     const existingGenus = await Genus.findOne({ name });
     if (existingGenus) {
-      return res.status(400).json({ message: "Genus already exists." });
+      res.status(400);
+      throw new Error("Genus already exists.");
     }
 
     const newGenus = new Genus({ name });
@@ -17,7 +18,9 @@ const createGenus = asyncHandler(async (req, res) => {
 
     res.status(201).json(newGenus);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -27,7 +30,9 @@ const getAllGenus = asyncHandler(async (req, res) => {
     const genus = await Genus.find();
     res.status(200).json(genus);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -36,11 +41,14 @@ const getGenusById = asyncHandler(async (req, res) => {
   try {
     const genus = await Genus.findById(req.params.id);
     if (!genus) {
-      return res.status(404).json({ message: "Genus not found" });
+      res.status(404);
+      throw new Error("Genus not found");
     }
     res.status(200).json(genus);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -51,7 +59,8 @@ const updateGenus = asyncHandler(async (req, res) => {
     const genus = await Genus.findById(req.params.id);
 
     if (!genus) {
-      return res.status(404).json({ message: "Genus not found" });
+      res.status(404);
+      throw new Error("Genus not found");
     }
 
     genus.name = name || genus.name;
@@ -59,7 +68,9 @@ const updateGenus = asyncHandler(async (req, res) => {
 
     res.status(200).json(genus);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -69,13 +80,16 @@ const deleteGenus = asyncHandler(async (req, res) => {
     const genus = await Genus.findById(req.params.id);
 
     if (!genus) {
-      return res.status(404).json({ message: "Genus not found" });
+      res.status(404);
+      throw new Error("Genus not found");
     }
 
     await genus.remove();
     res.status(200).json({ message: "Genus deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 

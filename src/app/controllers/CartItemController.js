@@ -19,50 +19,59 @@ const updateCartTotalPrice = async (user_id) => {
 
 // Create a new CartItem (Add to Cart)
 const createCartItem = asyncHandler(async (req, res) => {
-  const { plant_id, quantity } = req.body;
+  try {
+    const { plant_id, quantity } = req.body;
 
-  // Check if plant exists
-  const plant = await Plant.findById(plant_id);
-  if (!plant) {
-    return res.status(404).json({ message: "Plant not found" });
-  }
+    // Check if plant exists
+    const plant = await Plant.findById(plant_id);
+    if (!plant) {
+      res.status(404);
+      throw new Error("Plant not found");
+    }
 
-  // Calculate total price
-  const item_total_price = plant.price * quantity;
+    // Calculate total price
+    const item_total_price = plant.price * quantity;
 
-  const cart = await Cart.findOne({ user_id: req.user.id }).populate(
-    "list_cart_item_id"
-  );
-  const checkExistCartItem = cart.list_cart_item_id.find(
-    (cartItem) => cartItem.plant_id.toString() == plant_id
-  );
-  if (!checkExistCartItem) {
-    // Create new CartItem
-    const newCartItem = new CartItem({
-      plant_id,
-      quantity,
-      item_total_price,
-    });
-    await newCartItem.save();
+    const cart = await Cart.findOne({ user_id: req.user.id }).populate(
+      "list_cart_item_id"
+    );
 
-    // Find the cart and add the CartItem to the cart
+    const checkExistCartItem = cart.list_cart_item_id.find(
+      (cartItem) => cartItem.plant_id.toString() == plant_id
+    );
 
-    cart.list_cart_item_id.push(newCartItem._id);
-    await cart.save();
+    if (!checkExistCartItem) {
+      // Create new CartItem
+      const newCartItem = new CartItem({
+        plant_id,
+        quantity,
+        item_total_price,
+      });
+      await newCartItem.save();
 
-    // Update the total price of the cart
-    await updateCartTotalPrice(req.user.id);
+      // Add the CartItem to the cart
+      cart.list_cart_item_id.push(newCartItem._id);
+      await cart.save();
 
-    res.status(201).json(newCartItem);
-  } else {
-    checkExistCartItem.quantity += quantity;
-    checkExistCartItem.item_total_price += item_total_price;
-    await checkExistCartItem.save();
+      // Update the total price of the cart
+      await updateCartTotalPrice(req.user.id);
 
-    // Update the total price of the cart
-    await updateCartTotalPrice(req.user.id);
+      res.status(201).json(newCartItem);
+    } else {
+      // Update the existing CartItem
+      checkExistCartItem.quantity += quantity;
+      checkExistCartItem.item_total_price += item_total_price;
+      await checkExistCartItem.save();
 
-    res.status(201).json(checkExistCartItem);
+      // Update the total price of the cart
+      await updateCartTotalPrice(req.user.id);
+
+      res.status(201).json(checkExistCartItem);
+    }
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -74,12 +83,15 @@ const getCartItemById = asyncHandler(async (req, res) => {
     }).populate("plant_id");
 
     if (!cartItem) {
-      return res.status(404).json({ message: "Cart item not found" });
+      res.status(404);
+      throw new Error("Cart item not found");
     }
 
     res.status(200).json(cartItem);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -88,7 +100,8 @@ const updateCartItem = asyncHandler(async (req, res) => {
   const { quantity } = req.body;
 
   if (quantity < 0 || quantity === undefined) {
-    return res.status(400).json({ message: "Quantity not suitable" });
+    res.status(400);
+    throw new Error("Quantity not suitable");
   }
 
   try {
@@ -97,7 +110,8 @@ const updateCartItem = asyncHandler(async (req, res) => {
     }).populate("plant_id");
 
     if (!cartItem) {
-      return res.status(404).json({ message: "Cart item not found" });
+      res.status(404);
+      throw new Error("Cart item not found");
     }
 
     cartItem.quantity = quantity;
@@ -109,7 +123,9 @@ const updateCartItem = asyncHandler(async (req, res) => {
 
     res.status(200).json(cartItem);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -121,7 +137,8 @@ const deleteCartItem = asyncHandler(async (req, res) => {
     });
 
     if (!cartItem) {
-      return res.status(404).json({ message: "Cart item not found" });
+      res.status(404);
+      throw new Error("Cart item not found");
     }
 
     // Remove CartItem from the cart
@@ -138,7 +155,9 @@ const deleteCartItem = asyncHandler(async (req, res) => {
 
     res.status(200).json({ message: "Cart item removed successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 

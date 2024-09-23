@@ -13,10 +13,21 @@ const createVoucher = asyncHandler(async (req, res) => {
       voucher_discount,
     } = req.body;
 
-    // Check if voucher with the same code already exists
+    if (
+      !voucher_code ||
+      !voucher_name ||
+      !start_day ||
+      !end_day ||
+      !voucher_discount
+    ) {
+      res.status(400);
+      throw new Error("All fields are required except description");
+    }
+
     const existingVoucher = await Voucher.findOne({ voucher_code });
     if (existingVoucher) {
-      return res.status(400).json({ message: "Voucher code already exists." });
+      res.status(400);
+      throw new Error("Voucher code already exists");
     }
 
     const newVoucher = new Voucher({
@@ -31,7 +42,9 @@ const createVoucher = asyncHandler(async (req, res) => {
 
     res.status(201).json(newVoucher);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -41,7 +54,9 @@ const getAllVouchers = asyncHandler(async (req, res) => {
     const vouchers = await Voucher.find();
     res.status(200).json(vouchers);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -50,11 +65,14 @@ const getVoucherById = asyncHandler(async (req, res) => {
   try {
     const voucher = await Voucher.findById(req.params.id);
     if (!voucher) {
-      return res.status(404).json({ message: "Voucher not found" });
+      res.status(404);
+      throw new Error("Voucher not found");
     }
     res.status(200).json(voucher);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -69,10 +87,20 @@ const updateVoucher = asyncHandler(async (req, res) => {
       end_day,
       voucher_discount,
     } = req.body;
-    const voucher = await Voucher.findById(req.params.id);
 
+    const voucher = await Voucher.findById(req.params.id);
     if (!voucher) {
-      return res.status(404).json({ message: "Voucher not found" });
+      res.status(404);
+      throw new Error("Voucher not found");
+    }
+
+    // Check if voucher code is being changed and if it already exists
+    if (voucher_code && voucher_code !== voucher.voucher_code) {
+      const existingVoucher = await Voucher.findOne({ voucher_code });
+      if (existingVoucher) {
+        res.status(400);
+        throw new Error("Voucher code already exists");
+      }
     }
 
     voucher.voucher_code = voucher_code || voucher.voucher_code;
@@ -86,7 +114,9 @@ const updateVoucher = asyncHandler(async (req, res) => {
 
     res.status(200).json(voucher);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -94,15 +124,17 @@ const updateVoucher = asyncHandler(async (req, res) => {
 const deleteVoucher = asyncHandler(async (req, res) => {
   try {
     const voucher = await Voucher.findById(req.params.id);
-
     if (!voucher) {
-      return res.status(404).json({ message: "Voucher not found" });
+      res.status(404);
+      throw new Error("Voucher not found");
     }
 
     await voucher.remove();
     res.status(200).json({ message: "Voucher deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 

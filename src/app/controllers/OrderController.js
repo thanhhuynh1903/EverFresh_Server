@@ -15,36 +15,34 @@ const createOrder = asyncHandler(async (req, res) => {
       delivery_information_id,
       cart_id,
     } = req.body;
-    if (
-      payment_method === undefined ||
-      delivery_method_id === undefined ||
-      cart_id === undefined
-    ) {
-      res.status(404);
-      throw new Error("All fields are required");
+
+    if (!payment_method || !delivery_method_id || !cart_id) {
+      res.status(400);
+      throw new Error(
+        "Payment method, delivery method, and cart ID are required"
+      );
     }
-    // Check if the cart exists
+
     const cart = await Cart.findById(cart_id);
     if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
+      res.status(404);
+      throw new Error("Cart not found");
     }
 
-    // Check if the delivery method exists
     const deliveryMethod = await DeliveryMethod.findById(delivery_method_id);
     if (!deliveryMethod) {
-      return res.status(404).json({ message: "Delivery method not found" });
+      res.status(404);
+      throw new Error("Delivery method not found");
     }
 
-    // Check if the delivery information exists
-    let deliveryInfo = null;
+    let deliveryInfo;
     if (delivery_information_id) {
       deliveryInfo = await DeliveryInformation.findById(
         delivery_information_id
       );
       if (!deliveryInfo) {
-        return res
-          .status(404)
-          .json({ message: "Delivery information not found" });
+        res.status(404);
+        throw new Error("Delivery information not found");
       }
     } else {
       deliveryInfo = await DeliveryInformation.findOne({
@@ -52,22 +50,20 @@ const createOrder = asyncHandler(async (req, res) => {
         is_default: true,
       });
       if (!deliveryInfo) {
-        return res
-          .status(404)
-          .json({ message: "You must add Delivery information to order" });
+        res.status(404);
+        throw new Error("You must add Delivery information to order");
       }
     }
 
     let voucher = null;
-    // Check if the voucher exists (optional, only if voucher_id is provided)
     if (voucher_id) {
       voucher = await Voucher.findById(voucher_id);
       if (!voucher) {
-        return res.status(404).json({ message: "Voucher not found" });
+        res.status(404);
+        throw new Error("Voucher not found");
       }
     }
 
-    // Create new order
     const newOrder = new Order({
       customer_id: req.user.id,
       payment_method,
@@ -81,25 +77,25 @@ const createOrder = asyncHandler(async (req, res) => {
         address: deliveryInfo.address,
         address_detail: deliveryInfo.address_detail,
       },
-      total_price:
-        voucher === null
-          ? cart.total_price + deliveryMethod.price
-          : cart.total_price -
-            (cart.total_price * voucher.voucher_discount) / 100 +
-            deliveryMethod.price,
+      total_price: voucher
+        ? cart.total_price -
+          (cart.total_price * voucher.voucher_discount) / 100 +
+          deliveryMethod.price
+        : cart.total_price + deliveryMethod.price,
       list_cart_item_id: cart.list_cart_item_id,
     });
 
     await newOrder.save();
 
-    // reset cart
     cart.list_cart_item_id = [];
     cart.total_price = 0;
     await cart.save();
 
     res.status(201).json(newOrder);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -107,18 +103,20 @@ const createOrder = asyncHandler(async (req, res) => {
 const getAllOrders = asyncHandler(async (req, res) => {
   try {
     const orders = await Order.find({ customer_id: req.user.id })
-      .populate("voucher_id") // Populate voucher
+      .populate("voucher_id")
       .populate({
-        path: "list_cart_item_id", // Populate cart items
+        path: "list_cart_item_id",
         populate: {
-          path: "plant_id", // Populate plant within cart items
+          path: "plant_id",
           model: "Plant",
         },
       });
 
     res.status(200).json(orders);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -126,18 +124,20 @@ const getAllOrders = asyncHandler(async (req, res) => {
 const getAllOrdersForAdmin = asyncHandler(async (req, res) => {
   try {
     const orders = await Order.find()
-      .populate("voucher_id") // Populate voucher
+      .populate("voucher_id")
       .populate({
-        path: "list_cart_item_id", // Populate cart items
+        path: "list_cart_item_id",
         populate: {
-          path: "plant_id", // Populate plant within cart items
+          path: "plant_id",
           model: "Plant",
         },
       });
 
     res.status(200).json(orders);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -145,22 +145,25 @@ const getAllOrdersForAdmin = asyncHandler(async (req, res) => {
 const getOrderById = asyncHandler(async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate("voucher_id") // Populate voucher
+      .populate("voucher_id")
       .populate({
-        path: "list_cart_item_id", // Populate cart items
+        path: "list_cart_item_id",
         populate: {
-          path: "plant_id", // Populate plant within cart items
+          path: "plant_id",
           model: "Plant",
         },
       });
 
     if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+      res.status(404);
+      throw new Error("Order not found");
     }
 
     res.status(200).json(order);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -170,13 +173,16 @@ const deleteOrder = asyncHandler(async (req, res) => {
     const order = await Order.findById(req.params.id);
 
     if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+      res.status(404);
+      throw new Error("Order not found");
     }
 
     await order.remove();
     res.status(200).json({ message: "Order deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 

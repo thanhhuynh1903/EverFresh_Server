@@ -6,34 +6,24 @@ const createDeliveryInformation = asyncHandler(async (req, res) => {
   try {
     const { phone_number, address, address_detail } = req.body;
 
-    const checkExistDeliveryInformation = await DeliveryInformation.findOne({
+    const existingDeliveryInfo = await DeliveryInformation.findOne({
       user_id: req.user.id,
     });
-    if (!checkExistDeliveryInformation) {
-      const newDeliveryInfo = new DeliveryInformation({
-        phone_number,
-        address,
-        address_detail,
-        is_default: true,
-        user_id: req.user.id,
-      });
 
-      await newDeliveryInfo.save();
-      res.status(201).json(newDeliveryInfo);
-    } else {
-      const newDeliveryInfo = new DeliveryInformation({
-        phone_number,
-        address,
-        address_detail,
-        is_default: false,
-        user_id: req.user.id,
-      });
+    const newDeliveryInfo = new DeliveryInformation({
+      phone_number,
+      address,
+      address_detail,
+      is_default: !existingDeliveryInfo, // Set to true if no existing info
+      user_id: req.user.id,
+    });
 
-      await newDeliveryInfo.save();
-      res.status(201).json(newDeliveryInfo);
-    }
+    await newDeliveryInfo.save();
+    res.status(201).json(newDeliveryInfo);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -45,7 +35,9 @@ const getAllDeliveryInformation = asyncHandler(async (req, res) => {
     });
     res.status(200).json(deliveryInfoList);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -58,14 +50,15 @@ const getDeliveryInformationById = asyncHandler(async (req, res) => {
     });
 
     if (!deliveryInfo) {
-      return res
-        .status(404)
-        .json({ message: "Delivery information not found" });
+      res.status(404);
+      throw new Error("Delivery information not found");
     }
 
     res.status(200).json(deliveryInfo);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -80,9 +73,8 @@ const updateDeliveryInformation = asyncHandler(async (req, res) => {
     });
 
     if (!deliveryInfo) {
-      return res
-        .status(404)
-        .json({ message: "Delivery information not found" });
+      res.status(404);
+      throw new Error("Delivery information not found");
     }
 
     deliveryInfo.phone_number = phone_number || deliveryInfo.phone_number;
@@ -93,7 +85,9 @@ const updateDeliveryInformation = asyncHandler(async (req, res) => {
 
     res.status(200).json(deliveryInfo);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -106,9 +100,8 @@ const updateDeliveryInformationDefault = asyncHandler(async (req, res) => {
     });
 
     if (!deliveryInfo) {
-      return res
-        .status(404)
-        .json({ message: "Delivery information not found" });
+      res.status(404);
+      throw new Error("Delivery information not found");
     }
 
     // Set all delivery information to non-default
@@ -123,7 +116,9 @@ const updateDeliveryInformationDefault = asyncHandler(async (req, res) => {
 
     res.status(200).json(deliveryInfo);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -136,9 +131,8 @@ const deleteDeliveryInformation = asyncHandler(async (req, res) => {
     });
 
     if (!deliveryInfo) {
-      return res
-        .status(404)
-        .json({ message: "Delivery information not found" });
+      res.status(404);
+      throw new Error("Delivery information not found");
     }
 
     await deliveryInfo.remove();
@@ -146,7 +140,9 @@ const deleteDeliveryInformation = asyncHandler(async (req, res) => {
       .status(200)
       .json({ message: "Delivery information deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 

@@ -11,9 +11,8 @@ const createDeliveryMethod = asyncHandler(async (req, res) => {
       delivery_method_name,
     });
     if (existingMethod) {
-      return res
-        .status(400)
-        .json({ message: "Delivery method already exists." });
+      res.status(400);
+      throw new Error("Delivery method already exists.");
     }
 
     const newMethod = new DeliveryMethod({ delivery_method_name, price });
@@ -21,7 +20,9 @@ const createDeliveryMethod = asyncHandler(async (req, res) => {
 
     res.status(201).json(newMethod);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -31,7 +32,9 @@ const getAllDeliveryMethods = asyncHandler(async (req, res) => {
     const methods = await DeliveryMethod.find();
     res.status(200).json(methods);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -40,11 +43,14 @@ const getDeliveryMethodById = asyncHandler(async (req, res) => {
   try {
     const method = await DeliveryMethod.findById(req.params.id);
     if (!method) {
-      return res.status(404).json({ message: "Delivery method not found" });
+      res.status(404);
+      throw new Error("Delivery method not found");
     }
     res.status(200).json(method);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -55,7 +61,8 @@ const updateDeliveryMethod = asyncHandler(async (req, res) => {
     const method = await DeliveryMethod.findById(req.params.id);
 
     if (!method) {
-      return res.status(404).json({ message: "Delivery method not found" });
+      res.status(404);
+      throw new Error("Delivery method not found");
     }
 
     method.delivery_method_name =
@@ -66,7 +73,9 @@ const updateDeliveryMethod = asyncHandler(async (req, res) => {
 
     res.status(200).json(method);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -76,13 +85,16 @@ const deleteDeliveryMethod = asyncHandler(async (req, res) => {
     const method = await DeliveryMethod.findById(req.params.id);
 
     if (!method) {
-      return res.status(404).json({ message: "Delivery method not found" });
+      res.status(404);
+      throw new Error("Delivery method not found");
     }
 
     await method.remove();
     res.status(200).json({ message: "Delivery method deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
