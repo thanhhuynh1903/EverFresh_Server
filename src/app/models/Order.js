@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const orderSchema = mongoose.Schema(
   {
+    customer_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     payment_method: {
       type: String,
       required: true,
@@ -9,27 +14,42 @@ const orderSchema = mongoose.Schema(
     voucher_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Voucher",
-      required: true,
     },
-    delivery_method_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "DeliveryMethod",
-      required: true,
+    delivery_method: {
+      delivery_method_name: {
+        type: String,
+        required: true,
+      },
+      price: {
+        type: Number,
+        required: true,
+      },
     },
-    delivery_information_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "DeliveryInformation",
-      required: true,
+    delivery_information: {
+      phone_number: {
+        type: String,
+        required: true,
+      },
+      address: {
+        type: String,
+        required: true,
+      },
+      address_detail: {
+        type: String,
+        required: true,
+      },
     },
     total_price: {
       type: Number,
       required: true,
     },
-    cart_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Cart",
-      required: true,
-    },
+    list_cart_item_id: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CartItem",
+        required: true,
+      },
+    ],
   },
   {
     timestamps: true,

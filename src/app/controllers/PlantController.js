@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const RoleEnum = require("../../enum/RoleEnum");
 const Plant = require("../models/Plant");
 const moment = require("moment");
+const PlantStatusEnum = require("../../enum/PlantStatusEnum");
 
 // @desc Create new Plant
 // @route POST /plants
@@ -13,16 +14,25 @@ const createPlant = asyncHandler(async (req, res) => {
       throw new Error("Chỉ có Admin mới có quyền tạo Plant");
     }
 
-    const { name, genus_id, img_url, plant_type_id, price } = req.body;
+    const { name, genus_id, img_url, plant_type_id, price, quantity } =
+      req.body;
 
     // Validate required fields
-    if (!name || !genus_id || !img_url || !plant_type_id || !price) {
+    if (
+      !name ||
+      !genus_id ||
+      !img_url ||
+      !plant_type_id ||
+      !price ||
+      !quantity
+    ) {
       res.status(400);
       throw new Error("Các thuộc tính bắt buộc không được để trống");
     }
 
     // Create new plant object
     const plant = new Plant(req.body);
+    plant.status = PlantStatusEnum.IN_STOCK;
 
     const newPlant = await plant.save();
     res.status(201).json(newPlant);

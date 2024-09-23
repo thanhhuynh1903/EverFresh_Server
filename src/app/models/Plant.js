@@ -22,6 +22,9 @@ const plantSchema = mongoose.Schema(
     video_url: {
       type: [String],
     },
+    quantity: {
+      type: Number,
+    },
     height: {
       type: String,
     },
@@ -92,6 +95,9 @@ const plantSchema = mongoose.Schema(
       required: true,
     },
     average_rating: {
+      type: String,
+    },
+    status: {
       type: String,
     },
   },
