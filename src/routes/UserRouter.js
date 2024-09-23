@@ -3,7 +3,6 @@ const bodyParser = require("body-parser");
 const userRouter = express.Router();
 userRouter.use(bodyParser.json());
 const {
-  registerUser,
   getUsers,
   getUserById,
   updateUsers,
@@ -78,26 +77,6 @@ const {
  *   name: Users
  *   description: User management API
  */
-
-/**
- * @swagger
- * /api/users/register:
- *   post:
- *     summary: Register a new user
- *     tags: [Users]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/User'
- *     responses:
- *       200:
- *         description: User registered successfully
- *       400:
- *         description: Invalid input
- */
-userRouter.route("/register").post(registerUser);
 
 userRouter.use(validateToken);
 
@@ -245,16 +224,7 @@ userRouter
  *       404:
  *         description: User not found
  */
-userRouter
-  .route("/:id")
-  .all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "json/plain");
-    next();
-  })
-  .get(getUserById)
-  .put(updateUsers)
-  .delete(deleteUsers);
+userRouter.route("/:id").get(getUserById).put(updateUsers).delete(deleteUsers);
 
 /**
  * @swagger

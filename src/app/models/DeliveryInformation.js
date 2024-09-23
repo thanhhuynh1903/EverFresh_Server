@@ -15,7 +15,7 @@ const deliveryInformationSchema = mongoose.Schema(
       required: true,
     },
     is_default: {
-      type: String,
+      type: Boolean,
       required: true,
     },
     user_id: {

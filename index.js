@@ -60,6 +60,12 @@ app.use(cookieParser());
 const userRouter = require("./src/routes/UserRouter");
 const authRouter = require("./src/routes/AuthRouter");
 const plantRouter = require("./src/routes/PlantRouter");
+const genusRouter = require("./src/routes/GenusRouter");
+const plantTypeRouter = require("./src/routes/PlantTypeRouter");
+const voucherRouter = require("./src/routes/VoucherRouter");
+const deliveryMethodRouter = require("./src/routes/DeliveryMethodRouter");
+const deliveryInformationRouter = require("./src/routes/DeliveryInformationRouter");
+const cartItemRouter = require("./src/routes/CartItemRouter");
 
 //static folder path
 app.use(express.static(path.resolve(__dirname, "public")));
@@ -68,6 +74,11 @@ app.use(express.static(path.resolve(__dirname, "public")));
 app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/plants", plantRouter);
+app.use("/api/genus", genusRouter);
+app.use("/api/plant-types", plantTypeRouter);
+app.use("/api/vouchers", voucherRouter);
+app.use("/api/delivery-methods", deliveryMethodRouter);
+app.use("/api/delivery-information", deliveryInformationRouter);
 
 // Global error handler
 app.use(errorHandler);
@@ -98,6 +109,11 @@ const options = {
     "./src/routes/AuthRouter.js",
     "./src/routes/UserRouter.js",
     "./src/routes/PlantRouter.js",
+    "./src/routes/GenusRouter.js",
+    "./src/routes/PlantTypeRouter.js",
+    "./src/routes/VoucherRouter.js",
+    "./src/routes/DeliveryMethodRouter.js",
+    "./src/routes/DeliveryInformationRouter.js",
   ],
 };
 

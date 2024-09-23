@@ -1,6 +1,10 @@
 const express = require("express");
 const authRouter = express.Router();
-const { login, logout } = require("../app/controllers/AuthController");
+const {
+  login,
+  logout,
+  registerUser,
+} = require("../app/controllers/AuthController");
 const loginLimiter = require("../app/middleware/loginLimiter");
 
 /**
@@ -9,6 +13,35 @@ const loginLimiter = require("../app/middleware/loginLimiter");
  *   name: Auth
  *   description: Auth management API
  */
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User registered successfully
+ *       400:
+ *         description: Invalid input
+ */
+authRouter.route("/register").post(registerUser);
 
 /**
  * @swagger

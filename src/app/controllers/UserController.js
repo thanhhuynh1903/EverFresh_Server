@@ -5,76 +5,6 @@ const jwt = require("jsonwebtoken");
 const moment = require("moment/moment");
 const RoleEnum = require("../../enum/RoleEnum");
 
-//@desc Register New user
-//@route POST /api/users/register
-//@access public
-const registerUser = asyncHandler(async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
-    if (email === undefined || password === undefined) {
-      res.status(400);
-      throw new Error("All field not be empty!");
-    }
-    const userEmailAvailable = await User.findOne({ email });
-    if (userEmailAvailable) {
-      res.status(400);
-      throw new Error("User has already registered with Email!");
-    }
-
-    //Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({
-      email,
-      password: hashedPassword,
-      role: RoleEnum.CUSTOMER,
-    });
-    if (!user) {
-      res.status(400);
-      throw new Error("User data is not Valid!");
-    }
-    const accessToken = jwt.sign(
-      {
-        user: {
-          name: user.name,
-          email: user.email,
-          roleName: user.role,
-          avatar_url: user.avatar_url,
-          id: user.id,
-        },
-      },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "1d" }
-    );
-
-    const refreshToken = jwt.sign(
-      {
-        user: {
-          name: user.name,
-          email: user.email,
-          roleName: user.role,
-          avatar_url: user.avatar_url,
-          id: user.id,
-        },
-      },
-      process.env.REFRESH_TOKEN_SECRET,
-      { expiresIn: "7d" }
-    );
-    // Create secure cookie with refresh token
-    res.cookie("jwt", refreshToken, {
-      httpOnly: true, //accessible only by web server
-      secure: true, //https
-      sameSite: "None", //cross-site cookie
-      maxAge: 7 * 24 * 60 * 60 * 1000, //cookie expiry: set to match rT
-    });
-
-    res.status(200).json({ accessToken });
-  } catch (error) {
-    res
-      .status(res.statusCode || 500)
-      .send(error.message || "Internal Server Error");
-  }
-});
-
 //@desc Get all users
 //@route GET /api/users
 //@access private
@@ -86,14 +16,13 @@ const getUsers = asyncHandler(async (req, res, next) => {
         "Chỉ có Admin có quyền truy xuất thông tin tất cả tài khoản"
       );
     }
-    let users = await User.find().exec();
+    let users = await User.find({ role: RoleEnum.CUSTOMER }).exec();
     if (!users) {
       res.status(400);
       throw new Error(
         "Có lỗi xảy ra khi Admin truy xuất thông tin tất cả tài khoản"
       );
     }
-    users = users.filter((user) => user.role_id.roleName !== RoleEnum.ADMIN);
     res.status(200).json(users);
   } catch (error) {
     res
@@ -284,13 +213,11 @@ const changePassword = asyncHandler(async (req, res, next) => {
 
 const statisticsAccountByStatus = asyncHandler(async (req, res) => {
   try {
-    let accounts = await User.find();
+    const accounts = await User.find({ role: RoleEnum.CUSTOMER });
     if (!accounts || accounts.length === 0) {
       return null;
     }
-    accounts = accounts.filter(
-      (account) => account.role_id.roleName !== RoleEnum.ADMIN
-    );
+
     const tmpCountData = {
       Active: 0,
       InActive: 0,
@@ -325,13 +252,12 @@ const searchAccountByEmail = asyncHandler(async (req, res, next) => {
     }
     let users = await User.find({
       email: { $regex: searchEmail, $options: "i" },
+      role: RoleEnum.CUSTOMER,
     });
     if (!users) {
       res.status(500);
       throw new Error("Có lỗi xảy ra khi tìm kiếm tài khoản theo email");
     }
-    users = users.filter((user) => user.role_id.roleName !== RoleEnum.ADMIN);
-    // Send the results as a JSON response to the client
     res.json(users);
   } catch (error) {
     res
@@ -348,7 +274,7 @@ const banAccountByAdmin = asyncHandler(async (req, res, next) => {
       res.status(404);
       throw new Error("Không tìm thấy tài khoản!");
     }
-    if (user.role_id.roleName === RoleEnum.ADMIN) {
+    if (user.role === RoleEnum.ADMIN) {
       res.status(400);
       throw new Error("Không thể khóa tài khoản admin");
     }
@@ -367,7 +293,6 @@ const banAccountByAdmin = asyncHandler(async (req, res, next) => {
 });
 
 module.exports = {
-  registerUser,
   getUsers,
   getUserById,
   updateUsers,
