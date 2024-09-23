@@ -65,7 +65,6 @@ const plantTypeRouter = require("./src/routes/PlantTypeRouter");
 const voucherRouter = require("./src/routes/VoucherRouter");
 const deliveryMethodRouter = require("./src/routes/DeliveryMethodRouter");
 const deliveryInformationRouter = require("./src/routes/DeliveryInformationRouter");
-const cartItemRouter = require("./src/routes/CartItemRouter");
 
 //static folder path
 app.use(express.static(path.resolve(__dirname, "public")));
