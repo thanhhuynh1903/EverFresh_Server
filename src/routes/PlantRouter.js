@@ -166,8 +166,6 @@ const PlantRouter = express.Router();
  *   get:
  *     summary: Get all plants
  *     tags: [Plants]
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Returns an array of plants
@@ -176,7 +174,7 @@ const PlantRouter = express.Router();
  *       500:
  *         description: Internal server error
  */
-PlantRouter.route("/").get(validateToken, getPlants);
+PlantRouter.route("/").get(getPlants);
 
 /**
  * @swagger
