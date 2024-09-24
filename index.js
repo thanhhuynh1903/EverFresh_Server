@@ -68,6 +68,7 @@ const deliveryInformationRouter = require("./src/routes/DeliveryInformationRoute
 const cartItemRouter = require("./src/routes/CartItemRouter");
 const cartRouter = require("./src/routes/CartRouter");
 const orderRouter = require("./src/routes/OrderRouter");
+const paymentRouter = require("./src/routes/PaymentRouter");
 
 //static folder path
 app.use(express.static(path.resolve(__dirname, "public")));
@@ -84,6 +85,7 @@ app.use("/api/delivery-information", deliveryInformationRouter);
 app.use("/api/cart-items", cartItemRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/orders", orderRouter);
+app.use("/api/payment", paymentRouter);
 
 // Global error handler
 app.use(errorHandler);
@@ -122,6 +124,7 @@ const options = {
     "./src/routes/CartItemRouter.js",
     "./src/routes/CartRouter.js",
     "./src/routes/OrderRouter.js",
+    "./src/routes/PaymentRouter.js",
   ],
 };
 

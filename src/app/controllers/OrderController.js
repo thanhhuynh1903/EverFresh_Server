@@ -4,6 +4,7 @@ const asyncHandler = require("express-async-handler");
 const DeliveryMethod = require("../models/DeliveryMethod");
 const DeliveryInformation = require("../models/DeliveryInformation");
 const Voucher = require("../models/Voucher");
+const OrderStatusEnum = require("../../enum/OrderStatusEnum");
 
 // Create a new Order
 const createOrder = asyncHandler(async (req, res) => {
@@ -63,6 +64,11 @@ const createOrder = asyncHandler(async (req, res) => {
         throw new Error("Voucher not found");
       }
     }
+    const total_price = voucher
+      ? cart.total_price -
+        (cart.total_price * voucher.voucher_discount) / 100 +
+        deliveryMethod.price
+      : cart.total_price + deliveryMethod.price;
 
     const newOrder = new Order({
       customer_id: req.user.id,
@@ -77,12 +83,9 @@ const createOrder = asyncHandler(async (req, res) => {
         address: deliveryInfo.address,
         address_detail: deliveryInfo.address_detail,
       },
-      total_price: voucher
-        ? cart.total_price -
-          (cart.total_price * voucher.voucher_discount) / 100 +
-          deliveryMethod.price
-        : cart.total_price + deliveryMethod.price,
+      total_price: total_price,
       list_cart_item_id: cart.list_cart_item_id,
+      status: OrderStatusEnum.CONFIRMED,
     });
 
     await newOrder.save();

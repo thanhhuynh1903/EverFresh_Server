@@ -1,3 +1,4 @@
+const { type } = require("jquery");
 const mongoose = require("mongoose");
 
 const orderSchema = mongoose.Schema(
@@ -50,6 +51,10 @@ const orderSchema = mongoose.Schema(
         required: true,
       },
     ],
+    status: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true,
