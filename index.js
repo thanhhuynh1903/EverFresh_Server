@@ -69,6 +69,10 @@ const cartItemRouter = require("./src/routes/CartItemRouter");
 const cartRouter = require("./src/routes/CartRouter");
 const orderRouter = require("./src/routes/OrderRouter");
 const paymentRouter = require("./src/routes/PaymentRouter");
+const notificationRouter = require("./src/routes/NotificationRouter");
+const galleryRouter = require("./src/routes/GalleryRouter");
+const collectionRouter = require("./src/routes/CollectionRouter");
+const ratingRouter = require("./src/routes/RatingRouter");
 
 //static folder path
 app.use(express.static(path.resolve(__dirname, "public")));
@@ -86,6 +90,10 @@ app.use("/api/cart-items", cartItemRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/orders", orderRouter);
 app.use("/api/payment", paymentRouter);
+app.use("/api/notifications", notificationRouter);
+app.use("/api/ratings", ratingRouter);
+app.use("/api/galleries", galleryRouter);
+app.use("/api/collections", collectionRouter);
 
 // Global error handler
 app.use(errorHandler);
@@ -125,6 +133,10 @@ const options = {
     "./src/routes/CartRouter.js",
     "./src/routes/OrderRouter.js",
     "./src/routes/PaymentRouter.js",
+    "./src/routes/NotificationRouter.js",
+    "./src/routes/RatingRouter.js",
+    "./src/routes/GalleryRouter.js",
+    "./src/routes/CollectionRouter.js",
   ],
 };
 

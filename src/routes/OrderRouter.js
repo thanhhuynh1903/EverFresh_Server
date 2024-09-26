@@ -5,6 +5,8 @@ const {
   getAllOrdersForAdmin,
   getOrderById,
   deleteOrder,
+  changeOrderStatus,
+  changeStatusToFailedDelivery,
 } = require("../app/controllers/OrderController");
 const {
   validateTokenCustomer,
@@ -127,6 +129,72 @@ orderRouter.get("/admin", validateTokenAdmin, getAllOrdersForAdmin);
  *         description: Server error
  */
 orderRouter.get("/:id", validateToken, getOrderById);
+
+/**
+ * @swagger
+ * /api/orders/changeStatusToFailedDelivery/{id}:
+ *   put:
+ *     summary: Change an order status to failed delivery by ID (Admin only)
+ *     description: Change an order status to failed delivery by ID
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The order ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               failed_delivery_note:
+ *                 type: string
+ *                 description: The failed delivery note
+ *     responses:
+ *       200:
+ *         description: Order deleted successfully
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Server error
+ */
+orderRouter.put(
+  "/changeStatusToFailedDelivery/:id",
+  validateTokenAdmin,
+  changeStatusToFailedDelivery
+);
+
+/**
+ * @swagger
+ * /api/orders/changeStatus/{id}:
+ *   put:
+ *     summary: Change an order status by ID (Admin only)
+ *     description: Change an order status by ID
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The order ID
+ *     responses:
+ *       200:
+ *         description: Order deleted successfully
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Server error
+ */
+orderRouter.put("/changeStatus/:id", validateTokenAdmin, changeOrderStatus);
 
 /**
  * @swagger

@@ -3,6 +3,8 @@ const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const RoleEnum = require("../../enum/RoleEnum");
+const Gallery = require("../models/Gallery");
+const Cart = require("../models/Cart");
 
 //@desc Register New user
 //@route POST /api/users/register
@@ -27,6 +29,16 @@ const registerUser = asyncHandler(async (req, res, next) => {
       password: hashedPassword,
       role: RoleEnum.CUSTOMER,
     });
+    await Cart.create({
+      list_cart_item_id: [],
+      user_id: user._id,
+      total_price: 0,
+    });
+    await Gallery.create({
+      list_collection_id: [],
+      user_id: user._id,
+    });
+
     if (!user) {
       res.status(400);
       throw new Error("User data is not Valid!");

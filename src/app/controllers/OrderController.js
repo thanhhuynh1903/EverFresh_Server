@@ -170,6 +170,152 @@ const getOrderById = asyncHandler(async (req, res) => {
   }
 });
 
+// Get an order by ID
+const changeStatusToFailedDelivery = asyncHandler(async (req, res) => {
+  try {
+    const { failed_delivery_note } = req.body;
+    if (!failed_delivery_note) {
+      res.status(404);
+      throw new Error("Note is required");
+    }
+    const order = await Order.findById(req.params.id)
+      .populate("voucher_id")
+      .populate({
+        path: "list_cart_item_id",
+        populate: {
+          path: "plant_id",
+          model: "Plant",
+        },
+      });
+
+    if (!order) {
+      res.status(404);
+      throw new Error("Order not found");
+    }
+
+    if (order.status !== OrderStatusEnum.OUT_OF_DELIVERY) {
+      res.status(400);
+      throw new Error("Order status is not suitable");
+    }
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      req.params.id,
+      {
+        status: OrderStatusEnum.FAILED_DELIVERY,
+        failed_delivery_note,
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!updatedOrder) {
+      res.status(500);
+      throw new Error(
+        "Something when wrong when changing order status to failed delivery"
+      );
+    }
+
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
+const changeOrderStatus = asyncHandler(async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate("voucher_id")
+      .populate({
+        path: "list_cart_item_id",
+        populate: {
+          path: "plant_id",
+          model: "Plant",
+        },
+      });
+
+    if (!order) {
+      res.status(404);
+      throw new Error("Order not found");
+    }
+
+    switch (order.status) {
+      case OrderStatusEnum.CONFIRMED: {
+        const updatedOrderStatus = await Order.findByIdAndUpdate(
+          order._id,
+          {
+            status: OrderStatusEnum.SHIPPED,
+          },
+          {
+            new: true,
+          }
+        );
+        if (!updatedOrderStatus) {
+          res.status(500);
+          throw new Error(
+            "Something went wrong updating order status to Shipped"
+          );
+        }
+        res.status(200).json(updatedOrderStatus);
+        break;
+      }
+      case OrderStatusEnum.SHIPPED: {
+        const updatedOrderStatus = await Order.findByIdAndUpdate(
+          order._id,
+          {
+            status: OrderStatusEnum.OUT_OF_DELIVERY,
+          },
+          {
+            new: true,
+          }
+        );
+        if (!updatedOrderStatus) {
+          res.status(500);
+          throw new Error(
+            "Something went wrong updating order status to Out of Delivery"
+          );
+        }
+        res.status(200).json(updatedOrderStatus);
+        break;
+      }
+      case OrderStatusEnum.OUT_OF_DELIVERY: {
+        const updatedOrderStatus = await Order.findByIdAndUpdate(
+          order._id,
+          {
+            status: OrderStatusEnum.DELIVERED,
+            delivered_date: new Date(),
+          },
+          {
+            new: true,
+          }
+        );
+        if (!updatedOrderStatus) {
+          res.status(500);
+          throw new Error(
+            "Something went wrong updating order status to Delivered"
+          );
+        }
+        res.status(200).json(updatedOrderStatus);
+        break;
+      }
+      case OrderStatusEnum.DELIVERED: {
+        res.status(400);
+        throw new Error("Order already delivered");
+      }
+      default: {
+        res.status(400);
+        throw new Error("Order status unavailable");
+      }
+    }
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
 // Delete an order by ID for Admins only
 const deleteOrder = asyncHandler(async (req, res) => {
   try {
@@ -194,5 +340,7 @@ module.exports = {
   getAllOrders,
   getAllOrdersForAdmin,
   getOrderById,
+  changeOrderStatus,
+  changeStatusToFailedDelivery,
   deleteOrder,
 };

@@ -1,0 +1,189 @@
+const express = require("express");
+const {
+  getAllNotificationsOfUser,
+  getNotificationById,
+  createNotification,
+  updateAllNotificationIsRead,
+  updateNotificationIsRead,
+  updateAllNotificationIsSeen,
+  updateNotificationIsSeen,
+} = require("../app/controllers/NotificationController");
+const {
+  validateTokenCustomer,
+  validateTokenAdmin,
+} = require("../app/middleware/validateTokenHandler");
+const router = express.Router();
+
+/**
+ * @swagger
+ * /api/notifications:
+ *   get:
+ *     summary: Get all notifications of the logged-in user (Customer Only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of notifications for the user
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/", validateTokenCustomer, getAllNotificationsOfUser);
+
+/**
+ * @swagger
+ * /api/notifications/{id}:
+ *   get:
+ *     summary: Get a single notification by ID (Customer Only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Notification ID
+ *     responses:
+ *       200:
+ *         description: Notification found
+ *       404:
+ *         description: Notification not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/:id", validateTokenCustomer, getNotificationById);
+
+/**
+ * @swagger
+ * /api/notifications:
+ *   post:
+ *     summary: Create a new notification (Admin only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               description:
+ *                 type: string
+ *                 description: The notification content
+ *               user_id:
+ *                 type: string
+ *                 description: ID of the user to receive the notification
+ *     responses:
+ *       201:
+ *         description: Notification created
+ *       400:
+ *         description: Bad request, missing required fields
+ *       500:
+ *         description: Internal server error
+ */
+router.post("/", validateTokenAdmin, createNotification);
+
+/**
+ * @swagger
+ * /api/notifications/readAll/{user_id}:
+ *   put:
+ *     summary: Mark all notifications of a user as read (Customer Only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID whose notifications will be updated
+ *     responses:
+ *       200:
+ *         description: All notifications marked as read
+ *       404:
+ *         description: User has no notifications
+ *       500:
+ *         description: Internal server error
+ */
+router.put("/readAll/:id", validateTokenCustomer, updateAllNotificationIsRead);
+
+/**
+ * @swagger
+ * /api/notifications/read/{id}:
+ *   put:
+ *     summary: Mark a single notification as read (Customer Only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Notification ID to be updated
+ *     responses:
+ *       200:
+ *         description: Notification marked as read
+ *       404:
+ *         description: Notification not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put("/read/:id", validateTokenCustomer, updateNotificationIsRead);
+
+/**
+ * @swagger
+ * /api/notifications/seenAll/{user_id}:
+ *   put:
+ *     summary: Mark all notifications of a user as seen (Customer Only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID whose notifications will be updated
+ *     responses:
+ *       200:
+ *         description: All notifications marked as seen
+ *       404:
+ *         description: User has no notifications
+ *       500:
+ *         description: Internal server error
+ */
+router.put("/seenAll/:id", validateTokenCustomer, updateAllNotificationIsSeen);
+
+/**
+ * @swagger
+ * /api/notifications/seen/{id}:
+ *   put:
+ *     summary: Mark a single notification as seen (Customer Only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Notification ID to be updated
+ *     responses:
+ *       200:
+ *         description: Notification marked as seen
+ *       404:
+ *         description: Notification not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put("/seen/:id", validateTokenCustomer, updateNotificationIsSeen);
+
+module.exports = router;

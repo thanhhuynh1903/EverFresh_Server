@@ -51,6 +51,12 @@ const orderSchema = mongoose.Schema(
         required: true,
       },
     ],
+    delivered_date: {
+      type: Date,
+    },
+    failed_delivery_note: {
+      type: String,
+    },
     status: {
       type: String,
       required: true,
