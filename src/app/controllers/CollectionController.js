@@ -14,11 +14,14 @@ const getCollectionById = asyncHandler(async (req, res) => {
       "list_plant_id"
     );
     if (!collection) {
-      return res.status(404).json({ message: "Collection not found" });
+      res.status(404);
+      throw new Error("Collection not found");
     }
     res.status(200).json(collection);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -42,9 +45,7 @@ const addPlantToNewCollection = asyncHandler(async (req, res) => {
       throw new Error("Plant not found");
     }
 
-    const checkExistCollection = await Collection.findOne({
-      collection_name,
-    });
+    const checkExistCollection = await Collection.findOne({ collection_name });
 
     if (!checkExistCollection) {
       const newCollection = new Collection({
@@ -55,7 +56,7 @@ const addPlantToNewCollection = asyncHandler(async (req, res) => {
 
       const createdCollection = await newCollection.save();
 
-      //Add new collection to gallery
+      // Add new collection to gallery
       const gallery = await Gallery.findOne({ user_id: req.user.id });
       gallery.list_collection_id.push(createdCollection);
       await gallery.save();
@@ -63,15 +64,19 @@ const addPlantToNewCollection = asyncHandler(async (req, res) => {
       res.status(201).json(createdCollection);
     } else {
       if (checkExistCollection.list_plant_id.includes(plant.id)) {
-        res.status(400).json("Plant already exists in collection");
+        res.status(400);
+        throw new Error("Plant already exists in collection");
       }
+
       checkExistCollection.list_plant_id.push(plant.id);
       await checkExistCollection.save();
 
       res.status(201).json(checkExistCollection);
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -89,7 +94,8 @@ const removePlantFromCollection = asyncHandler(async (req, res) => {
     );
 
     if (!collection) {
-      return res.status(404).json({ message: "Collection not found" });
+      res.status(404);
+      throw new Error("Collection not found");
     }
 
     const plant = await Plant.findById(plant_id);
@@ -98,16 +104,16 @@ const removePlantFromCollection = asyncHandler(async (req, res) => {
       throw new Error("Plant not found");
     }
 
-    console.log(collection.list_plant_id);
-
     collection.list_plant_id = collection.list_plant_id.filter(
-      (item) => item._id.toString() != plant_id
+      (item) => item._id.toString() !== plant_id
     );
 
     const updatedCollection = await collection.save();
     res.status(200).json(updatedCollection);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -121,13 +127,16 @@ const deleteCollectionById = asyncHandler(async (req, res) => {
     const collection = await Collection.findById(req.params.id);
 
     if (!collection) {
-      return res.status(404).json({ message: "Collection not found" });
+      res.status(404);
+      throw new Error("Collection not found");
     }
 
     await collection.remove();
     res.status(200).json({ message: "Collection removed" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 

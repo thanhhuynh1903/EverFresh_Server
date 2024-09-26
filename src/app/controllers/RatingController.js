@@ -30,17 +30,16 @@ const getAllRatingsForPlant = asyncHandler(async (req, res) => {
       res.status(404);
       throw new Error("Plant not found");
     }
+
     const ratings = await Rating.find({
       plant_id: req.params.plant_id,
     }).populate("user_id");
-    if (!ratings) {
-      res.status(500);
-      throw new Error("Something went wrong when getting ratings for plant");
-    }
 
     res.status(200).json(ratings);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -54,20 +53,19 @@ const getAllRatingsOfOrder = asyncHandler(async (req, res) => {
     const order = await Order.findById(req.params.order_id);
     if (!order) {
       res.status(404);
-      throw new Error("Plant not found");
+      throw new Error("Order not found");
     }
+
     const ratings = await Rating.find({
       order_id: req.params.order_id,
       user_id: req.user.id,
     }).populate("plant_id");
-    if (!ratings) {
-      res.status(500);
-      throw new Error("Something went wrong when getting ratings of order");
-    }
 
     res.status(200).json(ratings);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -114,7 +112,7 @@ const createRating = asyncHandler(async (req, res) => {
       throw new Error("Order status is not allowed for rating");
     }
 
-    const IsExistRatingOfPlantOfOrder = Rating.findOne({
+    const IsExistRatingOfPlantOfOrder = await Rating.findOne({
       order_id,
       plant_id,
       user_id: req.user.id,
@@ -140,7 +138,9 @@ const createRating = asyncHandler(async (req, res) => {
 
     res.status(201).json(createdRating);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -150,15 +150,16 @@ const createRating = asyncHandler(async (req, res) => {
  * @access Private
  */
 const updateRatingById = asyncHandler(async (req, res) => {
-  const { star, comment } = req.body;
-
   try {
+    const { star, comment } = req.body;
+
     const rating = await Rating.findOne({
       _id: req.params.id,
       user_id: req.user.id,
     });
     if (!rating) {
-      return res.status(404).json({ message: "Rating not found" });
+      res.status(404);
+      throw new Error("Rating not found");
     }
 
     rating.star = star || rating.star;
@@ -171,7 +172,9 @@ const updateRatingById = asyncHandler(async (req, res) => {
 
     res.status(200).json(updatedRating);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
@@ -187,7 +190,8 @@ const deleteRatingById = asyncHandler(async (req, res) => {
       user_id: req.user.id,
     });
     if (!rating) {
-      return res.status(404).json({ message: "Rating not found" });
+      res.status(404);
+      throw new Error("Rating not found");
     }
 
     await rating.remove();
@@ -197,7 +201,9 @@ const deleteRatingById = asyncHandler(async (req, res) => {
 
     res.status(200).json({ message: "Rating deleted" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
   }
 });
 
