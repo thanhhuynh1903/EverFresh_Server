@@ -108,13 +108,12 @@ const updatePlant = asyncHandler(async (req, res) => {
       throw new Error("Không tìm thấy Plant");
     }
 
-    // Update only the fields that are provided in req.body
-    const updatedFields = req.body; // contains only the fields to update
+    const updatedFields = req.body;
 
     const updatedPlant = await Plant.findByIdAndUpdate(
       plantId,
-      { $set: updatedFields }, // Use $set to only update specific fields
-      { new: true, runValidators: true } // new: true returns the updated document, runValidators ensures validation on update
+      { $set: updatedFields },
+      { new: true, runValidators: true }
     )
       .populate("genus_id")
       .populate("plant_type_id");

@@ -73,6 +73,7 @@ const notificationRouter = require("./src/routes/NotificationRouter");
 const galleryRouter = require("./src/routes/GalleryRouter");
 const collectionRouter = require("./src/routes/CollectionRouter");
 const ratingRouter = require("./src/routes/RatingRouter");
+const linkedInformationRouter = require("./src/routes/LinkedInformationRouter");
 
 //static folder path
 app.use(express.static(path.resolve(__dirname, "public")));
@@ -94,6 +95,7 @@ app.use("/api/notifications", notificationRouter);
 app.use("/api/ratings", ratingRouter);
 app.use("/api/galleries", galleryRouter);
 app.use("/api/collections", collectionRouter);
+app.use("/api/linked-information", linkedInformationRouter);
 
 // Global error handler
 app.use(errorHandler);
@@ -137,6 +139,7 @@ const options = {
     "./src/routes/RatingRouter.js",
     "./src/routes/GalleryRouter.js",
     "./src/routes/CollectionRouter.js",
+    "./src/routes/LinkedInformationRouter.js",
   ],
 };
 
