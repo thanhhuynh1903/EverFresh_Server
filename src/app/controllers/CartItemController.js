@@ -97,14 +97,14 @@ const getCartItemById = asyncHandler(async (req, res) => {
 
 // Update CartItem (Modify quantity)
 const updateCartItem = asyncHandler(async (req, res) => {
-  const { quantity } = req.body;
-
-  if (quantity < 0 || quantity === undefined) {
-    res.status(400);
-    throw new Error("Quantity not suitable");
-  }
-
   try {
+    const { quantity } = req.body;
+
+    if (quantity < 0 || quantity === undefined) {
+      res.status(400);
+      throw new Error("Quantity not suitable");
+    }
+
     const cartItem = await CartItem.findOne({
       _id: req.params.id,
     }).populate("plant_id");
@@ -114,14 +114,30 @@ const updateCartItem = asyncHandler(async (req, res) => {
       throw new Error("Cart item not found");
     }
 
-    cartItem.quantity = quantity;
-    cartItem.item_total_price = cartItem.plant_id.price * quantity;
-    await cartItem.save();
+    if (quantity == 0) {
+      // Remove CartItem from the cart
+      const cart = await Cart.findOne({ user_id: req.user.id });
+      cart.list_cart_item_id = cart.list_cart_item_id.filter(
+        (item) => item.toString() !== req.params.id
+      );
+      await cart.save();
 
-    // Update the total price of the cart
-    await updateCartTotalPrice(req.user.id);
+      await cartItem.remove();
 
-    res.status(200).json(cartItem);
+      // Update the total price of the cart
+      await updateCartTotalPrice(req.user.id);
+
+      res.status(200).json({ cartItem: "" });
+    } else {
+      cartItem.quantity = quantity;
+      cartItem.item_total_price = cartItem.plant_id.price * quantity;
+      await cartItem.save();
+
+      // Update the total price of the cart
+      await updateCartTotalPrice(req.user.id);
+
+      res.status(200).json(cartItem);
+    }
   } catch (error) {
     res
       .status(res.statusCode || 500)
