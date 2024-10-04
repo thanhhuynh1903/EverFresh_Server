@@ -64,6 +64,12 @@ const createLinkedInfo = asyncHandler(async (req, res) => {
       throw new Error("All fields are required.");
     }
 
+    const checkExistCart = await LinkedInformation.findOne({ card_number });
+    if (checkExistCart) {
+      res.status(400);
+      throw new Error("Cart number is already exist");
+    }
+
     const newLinkedInfo = new LinkedInformation({
       user_id: req.user.id,
       author,

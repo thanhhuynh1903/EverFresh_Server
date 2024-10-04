@@ -14,6 +14,7 @@ const linkedInformationSchema = mongoose.Schema(
     card_number: {
       type: String,
       required: true,
+      unique: true,
     },
     expiration_date: {
       type: String,

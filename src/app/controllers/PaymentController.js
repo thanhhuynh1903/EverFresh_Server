@@ -282,43 +282,86 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
     let coupon = null;
     if (voucher) {
       coupon = await stripe.coupons.create({
-        percent_off: voucher.voucher_discount, // Giảm theo phần trăm
-        duration: "once", // Chỉ áp dụng một lần
+        percent_off: voucher.voucher_discount,
+        duration: "once",
       });
     }
 
     let promotionCode = null;
-    // Tạo promotion code từ coupon
     if (coupon) {
       promotionCode = await stripe.promotionCodes.create({
         coupon: coupon.id,
-        code: voucher.code, // Mã voucher của bạn
+        code: voucher.code,
       });
     }
 
     const linkedInformation = await LinkedInformation.findById(
       linked_information_id
     );
+    if (!linkedInformation) {
+      res.status(404);
+      throw new Error("Linked information not found");
+    }
 
     const address_detail_info = deliveryInfo.address.split(",");
 
-    // Tạo đối tượng customer trong Stripe nếu chưa tồn tại
-    const customer = await stripe.customers.create({
+    // Tạo hoặc cập nhật customer trong Stripe
+    let customer = await stripe.customers.list({
       email: req.user.email,
-      shipping: {
-        name: linkedInformation.author,
-        phone: deliveryInfo.phone_number,
-        address: {
-          line1: deliveryInfo.address,
-          line2: deliveryInfo.address_detail,
-          state: address_detail_info[1],
-          city: address_detail_info[2],
-          country: "VN",
-        },
-      },
+      limit: 1,
     });
+    if (customer.data.length > 0) {
+      customer = customer.data[0];
+      await stripe.customers.update(customer.id, {
+        shipping: {
+          name: linkedInformation.author,
+          phone: deliveryInfo.phone_number,
+          address: {
+            line1: deliveryInfo.address,
+            line2: deliveryInfo.address_detail,
+            state: address_detail_info[1],
+            city: address_detail_info[2],
+            country: "VN",
+          },
+        },
+      });
+    } else {
+      customer = await stripe.customers.create({
+        email: req.user.email,
+        shipping: {
+          name: linkedInformation.author,
+          phone: deliveryInfo.phone_number,
+          address: {
+            line1: deliveryInfo.address,
+            line2: deliveryInfo.address_detail,
+            state: address_detail_info[1],
+            city: address_detail_info[2],
+            country: "VN",
+          },
+        },
+      });
+    }
+
+    const paymentMethod = await stripe.paymentMethods.retrieve(
+      linkedInformation.stripe_card_id
+    );
+    if (!paymentMethod.customer) {
+      await stripe.paymentMethods.attach(linkedInformation.stripe_card_id, {
+        customer: customer.id,
+      });
+
+      await stripe.customers.update(customer.id, {
+        invoice_settings: {
+          default_payment_method: linkedInformation.stripe_card_id,
+        },
+      });
+    }
 
     const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      payment_intent_data: {
+        setup_future_usage: "off_session",
+      },
       line_items: cart.list_cart_item_id.map((item) => ({
         price_data: {
           currency: "vnd",
@@ -336,7 +379,7 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
           shipping_rate_data: {
             type: "fixed_amount",
             fixed_amount: {
-              amount: deliveryMethod.price, // Giá vận chuyển
+              amount: deliveryMethod.price,
               currency: "vnd",
             },
             display_name: deliveryMethod.delivery_method_name,
@@ -370,6 +413,8 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
       success_url: `${process.env.ReturnStripePaymentUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `http://localhost:5000/cancel`,
     });
+
+    console.log(session);
     return res.json({ url: session.url });
   } catch (error) {
     res
