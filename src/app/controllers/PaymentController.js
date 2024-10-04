@@ -8,6 +8,8 @@ const Voucher = require("../models/Voucher");
 const PaymentMethodEnum = require("../../enum/PaymentMethodEnum");
 const Order = require("../models/Order");
 const OrderStatusEnum = require("../../enum/OrderStatusEnum");
+const LinkedInformation = require("../models/LinkedInformation");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // Create a new Genus
 const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
@@ -18,9 +20,7 @@ const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
 
     if (!delivery_method_id || !cart_id) {
       res.status(400);
-      throw new Error(
-        "Payment method, delivery method, and cart ID are required"
-      );
+      throw new Error("Delivery method, and cart ID are required");
     }
 
     const cart = await Cart.findById(cart_id);
@@ -82,9 +82,11 @@ const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
     const MoMoApiUrl = process.env.MoMoApiUrl;
     const ipnUrl = process.env.ReturnMoMoPaymentUrl;
     const redirectUrl = process.env.ReturnMoMoPaymentUrl;
-    const orderId = `${req.user.id}-${voucher_id}-${delivery_method_id}-${
-      deliveryInfo._id
-    }-${cart_id}-${new Date().getTime().toString()}`;
+    const orderId = `${req.user.id}-${
+      voucher_id || new Date().getTime().toString()
+    }-${delivery_method_id}-${deliveryInfo._id}-${cart_id}-${new Date()
+      .getTime()
+      .toString()}`;
     const requestId = orderId;
     const orderInfo = `Thanh toán cho đơn hàng`;
     const requestType = "captureWallet";
@@ -156,6 +158,7 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
     const delivery_method_id = data[2];
     const delivery_information_id = data[3];
     const cart_id = data[4];
+    const currentTime = data[5];
 
     const cart = await Cart.findById(cart_id);
 
@@ -166,7 +169,7 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
     );
 
     let voucher = null;
-    if (voucher_id !== "undefined") {
+    if (voucher_id !== currentTime) {
       voucher = await Voucher.findById(voucher_id);
     }
 
@@ -179,7 +182,236 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
     const newOrder = new Order({
       customer_id,
       payment_method: PaymentMethodEnum.MOMO,
-      voucher_id: voucher_id !== "undefined" ? voucher_id : null,
+      voucher_id: voucher_id !== currentTime ? voucher_id : null,
+      delivery_method: {
+        delivery_method_name: deliveryMethod.delivery_method_name,
+        price: deliveryMethod.price,
+      },
+      delivery_information: {
+        phone_number: deliveryInfo.phone_number,
+        address: deliveryInfo.address,
+        address_detail: deliveryInfo.address_detail,
+      },
+      total_price: total_price,
+      list_cart_item_id: cart.list_cart_item_id,
+      status: OrderStatusEnum.CONFIRMED,
+    });
+
+    await newOrder.save();
+
+    cart.list_cart_item_id = [];
+    cart.total_price = 0;
+    await cart.save();
+
+    res.status(201).json(newOrder);
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
+const createStripePaymentUrl = asyncHandler(async (req, res) => {
+  try {
+    const {
+      voucher_id,
+      delivery_method_id,
+      delivery_information_id,
+      cart_id,
+      linked_information_id,
+    } = req.body;
+
+    if (!delivery_method_id || !cart_id) {
+      res.status(400);
+      throw new Error("Delivery method, and cart ID are required");
+    }
+
+    const cart = await Cart.findById(cart_id).populate({
+      path: "list_cart_item_id",
+      populate: {
+        path: "plant_id",
+        model: "Plant",
+      },
+    });
+    if (!cart) {
+      res.status(404);
+      throw new Error("Cart not found");
+    }
+
+    if (cart.list_cart_item_id.length === 0) {
+      res.status(400);
+      throw new Error("Cart is empty");
+    }
+
+    const deliveryMethod = await DeliveryMethod.findById(delivery_method_id);
+    if (!deliveryMethod) {
+      res.status(404);
+      throw new Error("Delivery method not found");
+    }
+
+    let deliveryInfo;
+    if (delivery_information_id) {
+      deliveryInfo = await DeliveryInformation.findById(
+        delivery_information_id
+      ).populate("user_id");
+      if (!deliveryInfo) {
+        res.status(404);
+        throw new Error("Delivery information not found");
+      }
+    } else {
+      deliveryInfo = await DeliveryInformation.findOne({
+        user_id: req.user.id,
+        is_default: true,
+      }).populate("user_id");
+      if (!deliveryInfo) {
+        res.status(404);
+        throw new Error("You must add Delivery information to order");
+      }
+    }
+
+    let voucher = null;
+    if (voucher_id) {
+      voucher = await Voucher.findById(voucher_id);
+      if (!voucher) {
+        res.status(404);
+        throw new Error("Voucher not found");
+      }
+    }
+
+    // Kiểm tra xem voucher có hợp lệ và tạo coupon trong Stripe nếu chưa có
+    let coupon = null;
+    if (voucher) {
+      coupon = await stripe.coupons.create({
+        percent_off: voucher.voucher_discount, // Giảm theo phần trăm
+        duration: "once", // Chỉ áp dụng một lần
+      });
+    }
+
+    let promotionCode = null;
+    // Tạo promotion code từ coupon
+    if (coupon) {
+      promotionCode = await stripe.promotionCodes.create({
+        coupon: coupon.id,
+        code: voucher.code, // Mã voucher của bạn
+      });
+    }
+
+    const linkedInformation = await LinkedInformation.findById(
+      linked_information_id
+    );
+
+    const address_detail_info = deliveryInfo.address.split(",");
+
+    // Tạo đối tượng customer trong Stripe nếu chưa tồn tại
+    const customer = await stripe.customers.create({
+      email: req.user.email,
+      shipping: {
+        name: linkedInformation.author,
+        phone: deliveryInfo.phone_number,
+        address: {
+          line1: deliveryInfo.address,
+          line2: deliveryInfo.address_detail,
+          state: address_detail_info[1],
+          city: address_detail_info[2],
+          country: "VN",
+        },
+      },
+    });
+
+    const session = await stripe.checkout.sessions.create({
+      line_items: cart.list_cart_item_id.map((item) => ({
+        price_data: {
+          currency: "vnd",
+          product_data: {
+            name: `${item.plant_id.name}: ${item.plant_id.sub_name}`,
+            images: item.plant_id.img_url,
+            description: item.plant_id.describe ? item.plant_id.describe : "",
+          },
+          unit_amount: item.plant_id.price,
+        },
+        quantity: item.quantity,
+      })),
+      shipping_options: [
+        {
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: {
+              amount: deliveryMethod.price, // Giá vận chuyển
+              currency: "vnd",
+            },
+            display_name: deliveryMethod.delivery_method_name,
+            delivery_estimate: {
+              minimum: {
+                unit: "business_day",
+                value: 3,
+              },
+              maximum: {
+                unit: "business_day",
+                value: 5,
+              },
+            },
+          },
+        },
+      ],
+      customer: customer.id,
+      discounts: promotionCode ? [{ promotion_code: promotionCode.id }] : [],
+      mode: "payment",
+      shipping_address_collection: {
+        allowed_countries: ["VN"],
+      },
+      metadata: {
+        order_id: `${req.user.id}-${
+          voucher_id || new Date().getTime().toString()
+        }-${delivery_method_id}-${deliveryInfo._id}-${cart_id}-${new Date()
+          .getTime()
+          .toString()}`,
+      },
+      expires_at: Math.floor(Date.now() / 1000) + 60 * 30, // Hết hạn sau 30 phút
+      success_url: `${process.env.ReturnStripePaymentUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `http://localhost:5000/cancel`,
+    });
+    return res.json({ url: session.url });
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
+const paymentStripeCallback = asyncHandler(async (req, res) => {
+  const result = await stripe.checkout.sessions.retrieve(req.query.session_id);
+  try {
+    const data = result.metadata.order_id.split("-");
+    const customer_id = data[0];
+    const voucher_id = data[1];
+    const delivery_method_id = data[2];
+    const delivery_information_id = data[3];
+    const cart_id = data[4];
+    const currentTime = data[5];
+
+    const cart = await Cart.findById(cart_id);
+
+    const deliveryMethod = await DeliveryMethod.findById(delivery_method_id);
+
+    const deliveryInfo = await DeliveryInformation.findById(
+      delivery_information_id
+    );
+
+    let voucher = null;
+    if (voucher_id !== currentTime) {
+      voucher = await Voucher.findById(voucher_id);
+    }
+
+    const total_price = voucher
+      ? cart.total_price -
+        (cart.total_price * voucher.voucher_discount) / 100 +
+        deliveryMethod.price
+      : cart.total_price + deliveryMethod.price;
+
+    const newOrder = new Order({
+      customer_id,
+      payment_method: PaymentMethodEnum.STRIPE,
+      voucher_id: voucher_id !== currentTime ? voucher_id : null,
       delivery_method: {
         delivery_method_name: deliveryMethod.delivery_method_name,
         price: deliveryMethod.price,
@@ -211,4 +443,6 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
 module.exports = {
   createMoMoPaymentUrl,
   paymentMoMoCallback,
+  createStripePaymentUrl,
+  paymentStripeCallback,
 };

@@ -91,7 +91,7 @@ const plantSchema = mongoose.Schema(
       type: String,
     },
     price: {
-      type: String,
+      type: Number,
       required: true,
     },
     average_rating: {
