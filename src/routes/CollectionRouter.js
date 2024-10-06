@@ -2,9 +2,10 @@ const express = require("express");
 const collectionRouter = express.Router();
 const {
   getCollectionById,
-  addPlantToNewCollection,
   removePlantFromCollection,
   deleteCollectionById,
+  changeCollection,
+  addPlantToFavorite,
 } = require("../app/controllers/CollectionController");
 const {
   validateTokenCustomer,
@@ -48,9 +49,44 @@ collectionRouter.get("/:id", getCollectionById);
 
 /**
  * @swagger
- * /api/collections:
+ * /api/collections/add-to-favorite:
  *   post:
- *     summary: Create a new collection or add a plant to an existing collection
+ *     summary: Add a plant to an Favorite collection
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Collections]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               plant_id:
+ *                 type: string
+ *                 description: ID of the plant to add
+ *             required:
+ *               - plant_id
+ *               - collection_name
+ *     responses:
+ *       201:
+ *         description: Collection created or updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Collection'
+ *       400:
+ *         description: All fields are required
+ *       404:
+ *         description: Plant not found
+ */
+collectionRouter.post("/add-to-favorite", addPlantToFavorite);
+
+/**
+ * @swagger
+ * /api/collections/change-collection:
+ *   put:
+ *     summary: Change plant from favorite collection to new collection
  *     security:
  *       - bearerAuth: []
  *     tags: [Collections]
@@ -72,7 +108,7 @@ collectionRouter.get("/:id", getCollectionById);
  *               - collection_name
  *     responses:
  *       201:
- *         description: Collection created or updated
+ *         description: Change collection successfully
  *         content:
  *           application/json:
  *             schema:
@@ -82,7 +118,7 @@ collectionRouter.get("/:id", getCollectionById);
  *       404:
  *         description: Plant not found
  */
-collectionRouter.post("/", addPlantToNewCollection);
+collectionRouter.put("/change-collection", changeCollection);
 
 /**
  * @swagger
@@ -107,7 +143,6 @@ collectionRouter.post("/", addPlantToNewCollection);
  *                 description: ID of the collection
  *             required:
  *               - plant_id
- *               - collection_id
  *     responses:
  *       200:
  *         description: Collection updated successfully
