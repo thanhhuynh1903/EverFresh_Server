@@ -3,6 +3,8 @@ const RoleEnum = require("../../enum/RoleEnum");
 const Plant = require("../models/Plant");
 const moment = require("moment");
 const PlantStatusEnum = require("../../enum/PlantStatusEnum");
+const Genus = require("../models/Genus");
+const PlantType = require("../models/PlantType");
 
 // @desc Create new Plant
 // @route POST /plants
@@ -14,20 +16,24 @@ const createPlant = asyncHandler(async (req, res) => {
       throw new Error("Chỉ có Admin mới có quyền tạo Plant");
     }
 
-    const { name, genus_id, img_url, plant_type_id, price, quantity } =
-      req.body;
+    const { name, genus_id, img_url, plant_type_id, price } = req.body;
 
     // Validate required fields
-    if (
-      !name ||
-      !genus_id ||
-      !img_url ||
-      !plant_type_id ||
-      !price ||
-      !quantity
-    ) {
+    if (!name || !genus_id || !img_url || !plant_type_id || !price) {
       res.status(400);
       throw new Error("Các thuộc tính bắt buộc không được để trống");
+    }
+
+    const genus = await Genus.findById(genus_id);
+    if (!genus) {
+      res.status(404);
+      throw new Error("Genus not found");
+    }
+
+    const plantType = await PlantType.findById(plant_type_id);
+    if (!plantType) {
+      res.status(404);
+      throw new Error("Plant Type not found");
     }
 
     // Create new plant object
