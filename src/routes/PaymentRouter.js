@@ -4,6 +4,8 @@ const {
   paymentMoMoCallback,
   createStripePaymentUrl,
   paymentStripeCallback,
+  createUpRankMoMoPaymentUrl,
+  createUpRankStripePaymentUrl,
 } = require("../app/controllers/PaymentController");
 const {
   validateTokenCustomer,
@@ -49,6 +51,27 @@ const router = express.Router();
  *         description: Internal server error
  */
 router.post("/momo", validateTokenCustomer, createMoMoPaymentUrl);
+
+/**
+ * @swagger
+ * /api/payment/momo/up-rank:
+ *   post:
+ *     summary: Create a MoMo up rank payment URL
+ *     description: Create a payment request to MoMo for the logged-in customer
+ *     tags: [Payment]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Payment URL created successfully
+ *       400:
+ *         description: Bad request, missing fields
+ *       404:
+ *         description: Resource not found (Cart, Delivery Method, etc.)
+ *       500:
+ *         description: Internal server error
+ */
+router.post("/momo/up-rank", validateTokenCustomer, createUpRankMoMoPaymentUrl);
 
 /**
  * @swagger
@@ -116,6 +139,31 @@ router.get("/momo/paymentCallBack", paymentMoMoCallback);
  *         description: Internal server error
  */
 router.post("/stripe", validateTokenCustomer, createStripePaymentUrl);
+
+/**
+ * @swagger
+ * /api/payment/stripe/up-rank:
+ *   post:
+ *     summary: Create a MoMo payment URL
+ *     description: Create a payment request to MoMo for the logged-in customer
+ *     tags: [Payment]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Payment URL created successfully
+ *       400:
+ *         description: Bad request, missing fields
+ *       404:
+ *         description: Resource not found (Cart, Delivery Method, etc.)
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  "/stripe/up-rank",
+  validateTokenCustomer,
+  createUpRankStripePaymentUrl
+);
 
 /**
  * @swagger

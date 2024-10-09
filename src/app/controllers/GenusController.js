@@ -63,10 +63,21 @@ const updateGenus = asyncHandler(async (req, res) => {
       throw new Error("Genus not found");
     }
 
-    genus.name = name || genus.name;
-    await genus.save();
+    if (name) {
+      const existingGenus = await Genus.findOne({ name });
+      if (existingGenus) {
+        res.status(400);
+        throw new Error("Genus already exists.");
+      }
 
-    res.status(200).json(genus);
+      genus.name = name;
+      await genus.save();
+
+      res.status(200).json(genus);
+    } else {
+      res.status(400);
+      throw new Error("Genus name is required for update");
+    }
   } catch (error) {
     res
       .status(res.statusCode || 500)

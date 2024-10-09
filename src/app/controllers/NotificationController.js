@@ -1,5 +1,6 @@
 const Notification = require("../models/Notification");
 const asyncHandler = require("express-async-handler");
+const User = require("../models/User");
 
 /**
  * @desc Get all notifications
@@ -43,16 +44,23 @@ const getNotificationById = asyncHandler(async (req, res) => {
  * @access Private
  */
 const createNotification = asyncHandler(async (req, res) => {
-  const { description, user_id } = req.body;
+  const { description, user_id, type } = req.body;
 
-  if (!description) {
+  if (!description || !type || !user_id) {
     res.status(400);
-    throw new Error("Description is required");
+    throw new Error("All fields are required");
+  }
+
+  const user = await User.findById(user_id);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
   }
 
   const newNotification = new Notification({
     user_id,
     description,
+    type,
   });
 
   try {

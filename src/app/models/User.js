@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const UserRankEnum = require("../../enum/UserRankEnum");
 
 const userSchema = mongoose.Schema(
   {
@@ -12,8 +13,6 @@ const userSchema = mongoose.Schema(
     email: {
       type: String,
       maxLength: 255,
-      required: [true, "Please add your email."],
-      unique: [true, "Email address has already taken."],
     },
     phone_number: {
       type: String,
@@ -27,6 +26,10 @@ const userSchema = mongoose.Schema(
     },
     avatar_url: {
       type: String,
+    },
+    rank: {
+      type: String,
+      default: UserRankEnum.NORMAL,
     },
     role: {
       type: String,

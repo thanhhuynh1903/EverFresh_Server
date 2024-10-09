@@ -72,6 +72,9 @@ router.get("/:id", validateTokenCustomer, getNotificationById);
  *           schema:
  *             type: object
  *             properties:
+ *               type:
+ *                 type: string
+ *                 description: The notification type
  *               description:
  *                 type: string
  *                 description: The notification content

@@ -9,9 +9,10 @@ const PaymentMethodEnum = require("../../enum/PaymentMethodEnum");
 const Order = require("../models/Order");
 const OrderStatusEnum = require("../../enum/OrderStatusEnum");
 const LinkedInformation = require("../models/LinkedInformation");
+const User = require("../models/User");
+const UserRankEnum = require("../../enum/UserRankEnum");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-// Create a new Genus
 const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
   try {
     //Handle order logic
@@ -150,60 +151,165 @@ const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
   }
 });
 
-const paymentMoMoCallback = asyncHandler(async (req, res) => {
+const createUpRankMoMoPaymentUrl = asyncHandler(async (req, res) => {
   try {
-    const data = req.query.orderId.split("-");
-    const customer_id = data[0];
-    const voucher_id = data[1];
-    const delivery_method_id = data[2];
-    const delivery_information_id = data[3];
-    const cart_id = data[4];
-    const currentTime = data[5];
-
-    const cart = await Cart.findById(cart_id);
-
-    const deliveryMethod = await DeliveryMethod.findById(delivery_method_id);
-
-    const deliveryInfo = await DeliveryInformation.findById(
-      delivery_information_id
-    );
-
-    let voucher = null;
-    if (voucher_id !== currentTime) {
-      voucher = await Voucher.findById(voucher_id);
+    const customer = await User.findById(req.user.id);
+    if (customer.rank === UserRankEnum.PREMIUM) {
+      res.status(400);
+      throw new Error("User's rank already is PREMIUM");
     }
 
-    const total_price = voucher
-      ? cart.total_price -
-        (cart.total_price * voucher.voucher_discount) / 100 +
-        deliveryMethod.price
-      : cart.total_price + deliveryMethod.price;
+    // create momo url
+    const partnerCode = process.env.PartnerCode;
+    const accessKey = process.env.AccessKey;
+    const secretKey = process.env.SecretKey;
+    const MoMoApiUrl = process.env.MoMoApiUrl;
+    const ipnUrl = process.env.ReturnMoMoPaymentUrl;
+    const redirectUrl = process.env.ReturnMoMoPaymentUrl;
+    const orderId = `${req.user.id}-df47s4as123s241123se-${new Date()
+      .getTime()
+      .toString()}-${new Date().getTime().toString()}-${new Date()
+      .getTime()
+      .toString()}-${new Date().getTime().toString()}`;
+    const requestId = orderId;
+    const orderInfo = `Up rank to Premium`;
+    const requestType = "captureWallet";
+    const extraData = "";
+    const orderGroupId = "";
+    const autoCapture = true;
+    const amount = 79000;
+    const lang = "vi";
 
-    const newOrder = new Order({
-      customer_id,
-      payment_method: PaymentMethodEnum.MOMO,
-      voucher_id: voucher_id !== currentTime ? voucher_id : null,
-      delivery_method: {
-        delivery_method_name: deliveryMethod.delivery_method_name,
-        price: deliveryMethod.price,
-      },
-      delivery_information: {
-        phone_number: deliveryInfo.phone_number,
-        address: deliveryInfo.address,
-        address_detail: deliveryInfo.address_detail,
-      },
-      total_price: total_price,
-      list_cart_item_id: cart.list_cart_item_id,
-      status: OrderStatusEnum.CONFIRMED,
+    const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
+
+    const signature = crypto
+      .createHmac("sha256", secretKey)
+      .update(rawSignature)
+      .digest("hex");
+
+    const requestBody = JSON.stringify({
+      partnerCode: partnerCode,
+      partnerName: "Test",
+      storeId: "MomoTestStore",
+      requestId: requestId,
+      amount: amount,
+      orderId: orderId,
+      orderInfo: orderInfo,
+      redirectUrl: redirectUrl,
+      ipnUrl: ipnUrl,
+      lang: lang,
+      requestType: requestType,
+      autoCapture: autoCapture,
+      extraData: extraData,
+      orderGroupId: orderGroupId,
+      signature: signature,
     });
+    const options = {
+      method: "POST",
+      url: MoMoApiUrl,
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(requestBody),
+      },
+      data: requestBody,
+    };
 
-    await newOrder.save();
+    try {
+      const response = await axios(options);
+      res.status(200).json(response.data);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.error("Error response:", error.response.data);
+        console.error("Error status:", error.response.status);
+        console.error("Error headers:", error.response.headers);
+      } else {
+        console.error("Error:", error.message);
+      }
+      throw new Error("Không thể tạo yêu cầu thanh toán MoMo");
+    }
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
 
-    cart.list_cart_item_id = [];
-    cart.total_price = 0;
-    await cart.save();
+const paymentMoMoCallback = asyncHandler(async (req, res) => {
+  try {
+    console.log(req.query);
+    if (req.query.message === "Thành công.") {
+      const data = req.query.orderId.split("-");
+      const customer_id = data[0];
+      const voucher_id = data[1];
+      const delivery_method_id = data[2];
+      const delivery_information_id = data[3];
+      const cart_id = data[4];
+      const currentTime = data[5];
 
-    res.status(201).json(newOrder);
+      if (voucher_id !== "df47s4as123s241123se") {
+        const cart = await Cart.findById(cart_id);
+
+        const deliveryMethod = await DeliveryMethod.findById(
+          delivery_method_id
+        );
+
+        const deliveryInfo = await DeliveryInformation.findById(
+          delivery_information_id
+        );
+
+        let voucher = null;
+        if (voucher_id !== currentTime) {
+          voucher = await Voucher.findById(voucher_id);
+        }
+
+        const total_price = voucher
+          ? cart.total_price -
+            (cart.total_price * voucher.voucher_discount) / 100 +
+            deliveryMethod.price
+          : cart.total_price + deliveryMethod.price;
+
+        const newOrder = new Order({
+          customer_id,
+          payment_method: PaymentMethodEnum.MOMO,
+          voucher_id: voucher_id !== currentTime ? voucher_id : null,
+          delivery_method: {
+            delivery_method_name: deliveryMethod.delivery_method_name,
+            price: deliveryMethod.price,
+          },
+          delivery_information: {
+            phone_number: deliveryInfo.phone_number,
+            address: deliveryInfo.address,
+            address_detail: deliveryInfo.address_detail,
+          },
+          total_price: total_price,
+          list_cart_item_id: cart.list_cart_item_id,
+          status: OrderStatusEnum.CONFIRMED,
+        });
+
+        await newOrder.save();
+
+        cart.list_cart_item_id = [];
+        cart.total_price = 0;
+        await cart.save();
+
+        res.status(201).json(newOrder);
+      } else {
+        const upRankCustomer = await User.findByIdAndUpdate(
+          customer_id,
+          { rank: UserRankEnum.PREMIUM },
+          { new: true }
+        );
+        if (!upRankCustomer) {
+          res.status(400);
+          throw new Error("Something went wrong when upgrading customer rank");
+        }
+
+        res.status(200).json(upRankCustomer);
+      }
+    } else {
+      res.status(400);
+      throw new Error("Payment Error");
+    }
   } catch (error) {
     res
       .status(res.statusCode || 500)
@@ -411,7 +517,64 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
       },
       expires_at: Math.floor(Date.now() / 1000) + 60 * 30, // Hết hạn sau 30 phút
       success_url: `${process.env.ReturnStripePaymentUrl}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `http://localhost:5000/cancel`,
+      cancel_url: `${process.env.ReturnStripePaymentUrl}?session_id={CHECKOUT_SESSION_ID}`,
+    });
+
+    console.log(session);
+    return res.json({ url: session.url });
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
+const createUpRankStripePaymentUrl = asyncHandler(async (req, res) => {
+  try {
+    let customer = await User.findById(req.user.id);
+    if (customer.rank === UserRankEnum.PREMIUM) {
+      res.status(400);
+      throw new Error("User's rank already is PREMIUM");
+    }
+
+    customer = await stripe.customers.list({
+      email: req.user.email,
+      limit: 1,
+    });
+    if (customer.data.length > 0) {
+      customer = customer.data[0];
+    } else {
+      customer = await stripe.customers.create({
+        email: req.user.email,
+      });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "vnd",
+            product_data: {
+              name: `Up rank to Premium`,
+            },
+            unit_amount: 79000,
+          },
+          quantity: 1,
+        },
+      ],
+      customer: customer.id,
+      mode: "payment",
+      metadata: {
+        order_id: `${req.user.id}-df47s4as123s241123se-${new Date()
+          .getTime()
+          .toString()}-${new Date().getTime().toString()}-${new Date()
+          .getTime()
+          .toString()}-${new Date().getTime().toString()}`,
+      },
+      expires_at: Math.floor(Date.now() / 1000) + 60 * 30, // Hết hạn sau 30 phút
+      success_url: `${process.env.ReturnStripePaymentUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.ReturnStripePaymentUrl}?session_id={CHECKOUT_SESSION_ID}`,
     });
 
     console.log(session);
@@ -424,60 +587,83 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
 });
 
 const paymentStripeCallback = asyncHandler(async (req, res) => {
-  const result = await stripe.checkout.sessions.retrieve(req.query.session_id);
   try {
-    const data = result.metadata.order_id.split("-");
-    const customer_id = data[0];
-    const voucher_id = data[1];
-    const delivery_method_id = data[2];
-    const delivery_information_id = data[3];
-    const cart_id = data[4];
-    const currentTime = data[5];
-
-    const cart = await Cart.findById(cart_id);
-
-    const deliveryMethod = await DeliveryMethod.findById(delivery_method_id);
-
-    const deliveryInfo = await DeliveryInformation.findById(
-      delivery_information_id
+    const result = await stripe.checkout.sessions.retrieve(
+      req.query.session_id
     );
+    if (result.payment_status === "paid") {
+      const data = result.metadata.order_id.split("-");
+      const customer_id = data[0];
+      const voucher_id = data[1];
+      const delivery_method_id = data[2];
+      const delivery_information_id = data[3];
+      const cart_id = data[4];
+      const currentTime = data[5];
 
-    let voucher = null;
-    if (voucher_id !== currentTime) {
-      voucher = await Voucher.findById(voucher_id);
+      if (voucher_id !== "df47s4as123s241123se") {
+        const cart = await Cart.findById(cart_id);
+
+        const deliveryMethod = await DeliveryMethod.findById(
+          delivery_method_id
+        );
+
+        const deliveryInfo = await DeliveryInformation.findById(
+          delivery_information_id
+        );
+
+        let voucher = null;
+        if (voucher_id !== currentTime) {
+          voucher = await Voucher.findById(voucher_id);
+        }
+
+        const total_price = voucher
+          ? cart.total_price -
+            (cart.total_price * voucher.voucher_discount) / 100 +
+            deliveryMethod.price
+          : cart.total_price + deliveryMethod.price;
+
+        const newOrder = new Order({
+          customer_id,
+          payment_method: PaymentMethodEnum.STRIPE,
+          voucher_id: voucher_id !== currentTime ? voucher_id : null,
+          delivery_method: {
+            delivery_method_name: deliveryMethod.delivery_method_name,
+            price: deliveryMethod.price,
+          },
+          delivery_information: {
+            phone_number: deliveryInfo.phone_number,
+            address: deliveryInfo.address,
+            address_detail: deliveryInfo.address_detail,
+          },
+          total_price: total_price,
+          list_cart_item_id: cart.list_cart_item_id,
+          status: OrderStatusEnum.CONFIRMED,
+        });
+
+        await newOrder.save();
+
+        cart.list_cart_item_id = [];
+        cart.total_price = 0;
+        await cart.save();
+
+        res.status(201).json(newOrder);
+      } else {
+        const upRankCustomer = await User.findByIdAndUpdate(
+          customer_id,
+          { rank: UserRankEnum.PREMIUM },
+          { new: true }
+        );
+        if (!upRankCustomer) {
+          res.status(400);
+          throw new Error("Something went wrong when upgrading customer rank");
+        }
+
+        res.status(200).json(upRankCustomer);
+      }
+    } else {
+      res.status(400);
+      throw new Error("Payment Error");
     }
-
-    const total_price = voucher
-      ? cart.total_price -
-        (cart.total_price * voucher.voucher_discount) / 100 +
-        deliveryMethod.price
-      : cart.total_price + deliveryMethod.price;
-
-    const newOrder = new Order({
-      customer_id,
-      payment_method: PaymentMethodEnum.STRIPE,
-      voucher_id: voucher_id !== currentTime ? voucher_id : null,
-      delivery_method: {
-        delivery_method_name: deliveryMethod.delivery_method_name,
-        price: deliveryMethod.price,
-      },
-      delivery_information: {
-        phone_number: deliveryInfo.phone_number,
-        address: deliveryInfo.address,
-        address_detail: deliveryInfo.address_detail,
-      },
-      total_price: total_price,
-      list_cart_item_id: cart.list_cart_item_id,
-      status: OrderStatusEnum.CONFIRMED,
-    });
-
-    await newOrder.save();
-
-    cart.list_cart_item_id = [];
-    cart.total_price = 0;
-    await cart.save();
-
-    res.status(201).json(newOrder);
   } catch (error) {
     res
       .status(res.statusCode || 500)
@@ -487,7 +673,9 @@ const paymentStripeCallback = asyncHandler(async (req, res) => {
 
 module.exports = {
   createMoMoPaymentUrl,
+  createUpRankMoMoPaymentUrl,
   paymentMoMoCallback,
   createStripePaymentUrl,
+  createUpRankStripePaymentUrl,
   paymentStripeCallback,
 };

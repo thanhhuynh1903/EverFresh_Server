@@ -4,7 +4,11 @@ const cartRouter = express.Router();
 const {
   validateTokenCustomer,
 } = require("../app/middleware/validateTokenHandler");
-const { createCart, getCart } = require("../app/controllers/CartController");
+const {
+  createCart,
+  getCart,
+  getSuggestionPlant,
+} = require("../app/controllers/CartController");
 
 cartRouter.use(validateTokenCustomer); // Ensure customer-only access
 
@@ -48,5 +52,23 @@ cartRouter.route("/").post(createCart);
  *         description: Internal server error
  */
 cartRouter.route("/").get(getCart);
+
+/**
+ * @swagger
+ * /api/cart/suggestion-plant:
+ *   get:
+ *     summary: Get the suggestion plant
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Cart]
+ *     responses:
+ *       200:
+ *         description: Customer's cart data
+ *       404:
+ *         description: Cart not found
+ *       500:
+ *         description: Internal server error
+ */
+cartRouter.route("/suggestion-plant").get(getSuggestionPlant);
 
 module.exports = cartRouter;

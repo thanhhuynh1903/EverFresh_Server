@@ -65,8 +65,17 @@ const updateDeliveryMethod = asyncHandler(async (req, res) => {
       throw new Error("Delivery method not found");
     }
 
-    method.delivery_method_name =
-      delivery_method_name || method.delivery_method_name;
+    if (delivery_method_name) {
+      const existingMethod = await DeliveryMethod.findOne({
+        delivery_method_name,
+      });
+      if (existingMethod) {
+        res.status(400);
+        throw new Error("Delivery method already exists.");
+      }
+      method.delivery_method_name = delivery_method_name;
+    }
+
     method.price = price || method.price;
 
     await method.save();
