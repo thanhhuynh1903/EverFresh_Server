@@ -72,18 +72,18 @@ const createNotification = asyncHandler(async (req, res) => {
  */
 const updateAllNotificationIsRead = asyncHandler(async (req, res) => {
   try {
-    const notifications = await Notification.find({ user_id: req.params.id });
+    const notifications = await Notification.find({ user_id: req.user.id });
     if (!notifications || notifications.length === 0) {
       res.status(404);
       throw new Error("User doesn't have notifications");
     }
 
     await Notification.updateMany(
-      { user_id: req.params.id },
+      { user_id: req.user.id },
       { $set: { is_read: true } }
     );
 
-    res.status(200).json(notifications);
+    res.status(200).json(await Notification.find({ user_id: req.user.id }));
   } catch (error) {
     res
       .status(res.statusCode || 500)
@@ -121,18 +121,18 @@ const updateNotificationIsRead = asyncHandler(async (req, res) => {
  */
 const updateAllNotificationIsSeen = asyncHandler(async (req, res) => {
   try {
-    const notifications = await Notification.find({ user_id: req.params.id });
+    const notifications = await Notification.find({ user_id: req.user.id });
     if (!notifications || notifications.length === 0) {
       res.status(404);
       throw new Error("User doesn't have notifications");
     }
 
     await Notification.updateMany(
-      { user_id: req.params.id },
+      { user_id: req.user.id },
       { $set: { is_new: false } }
     );
 
-    res.status(200).json(notifications);
+    res.status(200).json(await Notification.find({ user_id: req.user.id }));
   } catch (error) {
     res
       .status(res.statusCode || 500)
@@ -163,6 +163,52 @@ const updateNotificationIsSeen = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @desc Update all notifications to 'seen' for a user
+ * @route PUT /api/notifications/:id
+ * @access Private
+ */
+const deleteAllNotificationOfUser = asyncHandler(async (req, res) => {
+  try {
+    const notifications = await Notification.find({ user_id: req.user.id });
+    if (!notifications || notifications.length === 0) {
+      res.status(404);
+      throw new Error("User doesn't have notifications");
+    }
+
+    await Notification.deleteMany({ user_id: req.user.id });
+
+    res.status(200).json({ message: "All Notification Deleted" });
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
+/**
+ * @desc Update a single notification to 'seen'
+ * @route PUT /api/notifications/:id
+ * @access Private
+ */
+const deleteNotification = asyncHandler(async (req, res) => {
+  try {
+    const notification = await Notification.findById(req.params.id);
+    if (!notification) {
+      res.status(404);
+      throw new Error("Notification not found");
+    }
+
+    await Notification.findByIdAndDelete(req.params.id);
+
+    await res.status(200).json({ message: "Notification Deleted" });
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
 module.exports = {
   getAllNotificationsOfUser,
   getNotificationById,
@@ -171,4 +217,6 @@ module.exports = {
   updateNotificationIsRead,
   updateAllNotificationIsSeen,
   updateNotificationIsSeen,
+  deleteAllNotificationOfUser,
+  deleteNotification,
 };

@@ -7,6 +7,8 @@ const {
   updateNotificationIsRead,
   updateAllNotificationIsSeen,
   updateNotificationIsSeen,
+  deleteAllNotificationOfUser,
+  deleteNotification,
 } = require("../app/controllers/NotificationController");
 const {
   validateTokenCustomer,
@@ -88,19 +90,12 @@ router.post("/", validateTokenAdmin, createNotification);
 
 /**
  * @swagger
- * /api/notifications/readAll/{user_id}:
+ * /api/notifications/readAll:
  *   put:
  *     summary: Mark all notifications of a user as read (Customer Only)
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: user_id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID whose notifications will be updated
  *     responses:
  *       200:
  *         description: All notifications marked as read
@@ -109,7 +104,7 @@ router.post("/", validateTokenAdmin, createNotification);
  *       500:
  *         description: Internal server error
  */
-router.put("/readAll/:id", validateTokenCustomer, updateAllNotificationIsRead);
+router.put("/readAll", validateTokenCustomer, updateAllNotificationIsRead);
 
 /**
  * @swagger
@@ -138,19 +133,12 @@ router.put("/read/:id", validateTokenCustomer, updateNotificationIsRead);
 
 /**
  * @swagger
- * /api/notifications/seenAll/{user_id}:
+ * /api/notifications/seenAll:
  *   put:
  *     summary: Mark all notifications of a user as seen (Customer Only)
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: user_id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID whose notifications will be updated
  *     responses:
  *       200:
  *         description: All notifications marked as seen
@@ -159,7 +147,7 @@ router.put("/read/:id", validateTokenCustomer, updateNotificationIsRead);
  *       500:
  *         description: Internal server error
  */
-router.put("/seenAll/:id", validateTokenCustomer, updateAllNotificationIsSeen);
+router.put("/seenAll", validateTokenCustomer, updateAllNotificationIsSeen);
 
 /**
  * @swagger
@@ -185,5 +173,48 @@ router.put("/seenAll/:id", validateTokenCustomer, updateAllNotificationIsSeen);
  *         description: Internal server error
  */
 router.put("/seen/:id", validateTokenCustomer, updateNotificationIsSeen);
+
+/**
+ * @swagger
+ * /api/notifications/deleteAll:
+ *   delete:
+ *     summary: Delete all notifications of a user (Customer Only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All notifications deleted
+ *       404:
+ *         description: User has no notifications
+ *       500:
+ *         description: Internal server error
+ */
+router.delete("/deleteAll", validateTokenCustomer, deleteAllNotificationOfUser);
+
+/**
+ * @swagger
+ * /api/notifications/delete/{id}:
+ *   delete:
+ *     summary: Mark a single notification (Customer Only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Notification ID to be updated
+ *     responses:
+ *       200:
+ *         description: Notification marked as seen
+ *       404:
+ *         description: Notification not found
+ *       500:
+ *         description: Internal server error
+ */
+router.delete("/delete/:id", validateTokenCustomer, deleteNotification);
 
 module.exports = router;

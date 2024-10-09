@@ -24,6 +24,11 @@ const createPlant = asyncHandler(async (req, res) => {
       throw new Error("Các thuộc tính bắt buộc không được để trống");
     }
 
+    if (price < 0) {
+      res.status(400);
+      throw new Error("price must be greater than zero");
+    }
+
     const genus = await Genus.findById(genus_id);
     if (!genus) {
       res.status(404);
@@ -115,6 +120,27 @@ const updatePlant = asyncHandler(async (req, res) => {
     }
 
     const updatedFields = req.body;
+
+    if (updatedFields.price < 0) {
+      res.status(400);
+      throw new Error("price must be greater than zero");
+    }
+
+    if (updatedFields.genus_id) {
+      const genus = await Genus.findById(updatedFields.genus_id);
+      if (!genus) {
+        res.status(404);
+        throw new Error("Genus not found");
+      }
+    }
+
+    if (updatedFields.plant_type_id) {
+      const plantType = await PlantType.findById(updatedFields.plant_type_id);
+      if (!plantType) {
+        res.status(404);
+        throw new Error("Plant type not found");
+      }
+    }
 
     const updatedPlant = await Plant.findByIdAndUpdate(
       plantId,
