@@ -21,6 +21,9 @@ const userSchema = mongoose.Schema(
     country: {
       type: String,
     },
+    gender: {
+      type: String,
+    },
     password: {
       type: String,
     },

@@ -42,6 +42,9 @@ const {
  *         phone_number:
  *           type: string
  *           description: User's phone number
+ *         gender:
+ *           type: string
+ *           description: User's gender
  *         country:
  *           type: string
  *           description: User's country
