@@ -5,6 +5,9 @@ const PlantStatusEnum = require("../../enum/PlantStatusEnum");
 const Genus = require("../models/Genus");
 const PlantType = require("../models/PlantType");
 const Seed = require("../models/Seed");
+const NotificationTypeEnum = require("../../enum/NotificationTypeEnum");
+const Notification = require("../models/Notification");
+const User = require("../models/User");
 
 // @desc Create new seed
 // @route POST /seeds
@@ -43,8 +46,36 @@ const createSeed = asyncHandler(async (req, res) => {
     // Create new seed object
     const seed = new Seed(req.body);
     seed.status = PlantStatusEnum.IN_STOCK;
-
     const newSeed = await seed.save();
+
+    setImmediate(async () => {
+      try {
+        const customers = await User.find({
+          role: RoleEnum.CUSTOMER,
+          status: true,
+        });
+
+        if (customers.length > 0) {
+          const notifications = customers.map((customer) => ({
+            user_id: customer._id,
+            description: "Our shop have updated more seeds",
+            type: NotificationTypeEnum.NEW_SEED,
+          }));
+
+          await Notification.insertMany(notifications);
+
+          for (const customer of customers) {
+            const userNotifications = await Notification.find({
+              user_id: customer._id,
+            }).sort({ createdAt: -1 });
+            _io.emit(`notifications-${customer._id}`, userNotifications);
+          }
+        }
+      } catch (error) {
+        console.error("Error sending notifications:", error);
+      }
+    });
+
     res.status(201).json(newSeed);
   } catch (error) {
     res

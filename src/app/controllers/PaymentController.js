@@ -14,6 +14,8 @@ const UserRankEnum = require("../../enum/UserRankEnum");
 const VoucherStatusEnum = require("../../enum/VoucherStatusEnum");
 const ProductTypeEnum = require("../../enum/ProductTypeEnum");
 const PlanterCategoryEnum = require("../../enum/PlanterCategoryEnum");
+const NotificationTypeEnum = require("../../enum/NotificationTypeEnum");
+const Notification = require("../models/Notification");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
@@ -314,6 +316,25 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
         cart.list_cart_item_id = [];
         cart.total_price = 0;
         await cart.save();
+
+        setImmediate(async () => {
+          try {
+            const notification = new Notification({
+              user_id: customer_id,
+              description: "You have purchasing order",
+              type: NotificationTypeEnum.PURCHASING_ORDER,
+            });
+
+            await notification.save();
+
+            const userNotifications = await Notification.find({
+              user_id: customer_id,
+            }).sort({ createdAt: -1 });
+            _io.emit(`notifications-${customer_id}`, userNotifications);
+          } catch (error) {
+            console.error("Error sending notifications:", error);
+          }
+        });
 
         res.status(201).json(newOrder);
       } else {
@@ -686,6 +707,25 @@ const paymentStripeCallback = asyncHandler(async (req, res) => {
         cart.list_cart_item_id = [];
         cart.total_price = 0;
         await cart.save();
+
+        setImmediate(async () => {
+          try {
+            const notification = new Notification({
+              user_id: customer_id,
+              description: "You have purchasing order",
+              type: NotificationTypeEnum.PURCHASING_ORDER,
+            });
+
+            await notification.save();
+
+            const userNotifications = await Notification.find({
+              user_id: customer_id,
+            }).sort({ createdAt: -1 });
+            _io.emit(`notifications-${customer_id}`, userNotifications);
+          } catch (error) {
+            console.error("Error sending notifications:", error);
+          }
+        });
 
         res.status(201).json(newOrder);
       } else {

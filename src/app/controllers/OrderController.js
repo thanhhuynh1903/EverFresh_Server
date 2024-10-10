@@ -5,6 +5,8 @@ const DeliveryMethod = require("../models/DeliveryMethod");
 const DeliveryInformation = require("../models/DeliveryInformation");
 const Voucher = require("../models/Voucher");
 const OrderStatusEnum = require("../../enum/OrderStatusEnum");
+const Notification = require("../models/Notification");
+const NotificationTypeEnum = require("../../enum/NotificationTypeEnum");
 
 // Create a new Order
 const createOrder = asyncHandler(async (req, res) => {
@@ -246,6 +248,28 @@ const changeOrderStatus = asyncHandler(async (req, res) => {
           );
         }
 
+        setImmediate(async () => {
+          try {
+            const notification = new Notification({
+              user_id: order.customer_id.toString(),
+              description: "Your order is shipped",
+              type: NotificationTypeEnum.SHIPPED,
+            });
+
+            await notification.save();
+
+            const userNotifications = await Notification.find({
+              user_id: order.customer_id.toString(),
+            }).sort({ createdAt: -1 });
+            _io.emit(
+              `notifications-${order.customer_id.toString()}`,
+              userNotifications
+            );
+          } catch (error) {
+            console.error("Error sending notifications:", error);
+          }
+        });
+
         res.status(200).json(updatedOrderStatus);
         break;
       }
@@ -270,6 +294,28 @@ const changeOrderStatus = asyncHandler(async (req, res) => {
             "Something went wrong updating order status to Out of Delivery"
           );
         }
+
+        setImmediate(async () => {
+          try {
+            const notification = new Notification({
+              user_id: order.customer_id.toString(),
+              description: "Your order is out for delivery",
+              type: NotificationTypeEnum.OUT_OF_DELIVERY,
+            });
+
+            await notification.save();
+
+            const userNotifications = await Notification.find({
+              user_id: order.customer_id.toString(),
+            }).sort({ createdAt: -1 });
+            _io.emit(
+              `notifications-${order.customer_id.toString()}`,
+              userNotifications
+            );
+          } catch (error) {
+            console.error("Error sending notifications:", error);
+          }
+        });
 
         res.status(200).json(updatedOrderStatus);
         break;
@@ -296,6 +342,28 @@ const changeOrderStatus = asyncHandler(async (req, res) => {
             "Something went wrong updating order status to Delivered"
           );
         }
+
+        setImmediate(async () => {
+          try {
+            const notification = new Notification({
+              user_id: order.customer_id.toString(),
+              description: "Your order has been delivered",
+              type: NotificationTypeEnum.DELIVERED,
+            });
+
+            await notification.save();
+
+            const userNotifications = await Notification.find({
+              user_id: order.customer_id.toString(),
+            }).sort({ createdAt: -1 });
+            _io.emit(
+              `notifications-${order.customer_id.toString()}`,
+              userNotifications
+            );
+          } catch (error) {
+            console.error("Error sending notifications:", error);
+          }
+        });
 
         res.status(200).json(updatedOrderStatus);
         break;

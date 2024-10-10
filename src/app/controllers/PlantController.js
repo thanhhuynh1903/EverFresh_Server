@@ -5,6 +5,9 @@ const moment = require("moment");
 const PlantStatusEnum = require("../../enum/PlantStatusEnum");
 const Genus = require("../models/Genus");
 const PlantType = require("../models/PlantType");
+const User = require("../models/User");
+const Notification = require("../models/Notification");
+const NotificationTypeEnum = require("../../enum/NotificationTypeEnum");
 
 // @desc Create new Plant
 // @route POST /plants
@@ -44,8 +47,36 @@ const createPlant = asyncHandler(async (req, res) => {
     // Create new plant object
     const plant = new Plant(req.body);
     plant.status = PlantStatusEnum.IN_STOCK;
-
     const newPlant = await plant.save();
+
+    setImmediate(async () => {
+      try {
+        const customers = await User.find({
+          role: RoleEnum.CUSTOMER,
+          status: true,
+        });
+
+        if (customers.length > 0) {
+          const notifications = customers.map((customer) => ({
+            user_id: customer._id,
+            description: "Our shop have updated more plants",
+            type: NotificationTypeEnum.NEW_PLANT,
+          }));
+
+          await Notification.insertMany(notifications);
+
+          for (const customer of customers) {
+            const userNotifications = await Notification.find({
+              user_id: customer._id,
+            }).sort({ createdAt: -1 });
+            _io.emit(`notifications-${customer._id}`, userNotifications);
+          }
+        }
+      } catch (error) {
+        console.error("Error sending notifications:", error);
+      }
+    });
+
     res.status(201).json(newPlant);
   } catch (error) {
     res
@@ -86,7 +117,6 @@ const getPlants = asyncHandler(async (req, res) => {
       .populate("genus_id")
       .populate("plant_type_id")
       .exec();
-
     if (!plants) {
       res.status(400);
       throw new Error("Có lỗi xảy ra khi truy xuất tất cả Plant");
