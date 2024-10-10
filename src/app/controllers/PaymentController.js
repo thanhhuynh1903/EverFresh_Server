@@ -270,6 +270,9 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
           if (voucher.quantity <= 1) {
             voucher.status = VoucherStatusEnum.IN_VALID;
             await voucher.save();
+          } else {
+            voucher.quantity = voucher.quantity - 1;
+            await voucher.save();
           }
         }
 
@@ -408,10 +411,18 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
     // Kiểm tra xem voucher có hợp lệ và tạo coupon trong Stripe nếu chưa có
     let coupon = null;
     if (voucher) {
-      coupon = await stripe.coupons.create({
-        percent_off: voucher.voucher_discount,
-        duration: "once",
-      });
+      if (voucher.is_percent) {
+        coupon = await stripe.coupons.create({
+          percent_off: voucher.voucher_discount,
+          duration: "once",
+        });
+      } else {
+        coupon = await stripe.coupons.create({
+          amount_off: voucher.voucher_discount,
+          duration: "once",
+          currency: "vnd",
+        });
+      }
     }
 
     let promotionCode = null;
@@ -630,6 +641,9 @@ const paymentStripeCallback = asyncHandler(async (req, res) => {
 
           if (voucher.quantity <= 1) {
             voucher.status = VoucherStatusEnum.IN_VALID;
+            await voucher.save();
+          } else {
+            voucher.quantity = voucher.quantity - 1;
             await voucher.save();
           }
         }
