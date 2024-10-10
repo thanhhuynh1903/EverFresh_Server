@@ -104,7 +104,6 @@ const getPlants = asyncHandler(async (req, res) => {
 // @access Private
 const updatePlant = asyncHandler(async (req, res) => {
   try {
-    // Check if the user is an admin
     if (req.user.roleName !== RoleEnum.ADMIN) {
       res.status(403);
       throw new Error("Chỉ có Admin mới có quyền thay đổi thông tin Plant");
@@ -157,6 +156,53 @@ const updatePlant = asyncHandler(async (req, res) => {
 
     // Return the updated plant
     res.status(200).json(updatedPlant);
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
+const updatePlantStatus = asyncHandler(async (req, res) => {
+  try {
+    if (req.user.roleName !== RoleEnum.ADMIN) {
+      res.status(403);
+      throw new Error("Chỉ có Admin mới có quyền thay đổi trạng thái Plant");
+    }
+
+    const plant = await Plant.findById(req.params.id);
+    if (!plant) {
+      res.status(404);
+      throw new Error("Plant not found");
+    }
+
+    const { status } = req.body;
+    switch (status) {
+      case PlantStatusEnum.IN_STOCK: {
+        const updatedPlant = await Plant.findByIdAndUpdate(
+          req.params.id,
+          { status: PlantStatusEnum.IN_STOCK },
+          { new: true }
+        );
+
+        res.status(200).json(updatedPlant);
+        break;
+      }
+      case PlantStatusEnum.OUT_OF_STOCK: {
+        const updatedPlant = await Plant.findByIdAndUpdate(
+          req.params.id,
+          { status: PlantStatusEnum.OUT_OF_STOCK },
+          { new: true }
+        );
+
+        res.status(200).json(updatedPlant);
+        break;
+      }
+      default: {
+        res.status(400);
+        throw new Error("Status is not supported");
+      }
+    }
   } catch (error) {
     res
       .status(res.statusCode || 500)
@@ -232,5 +278,6 @@ module.exports = {
   getPlants,
   updatePlant,
   searchPlantByName,
+  updatePlantStatus,
   deletePlant,
 };

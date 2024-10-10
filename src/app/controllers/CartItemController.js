@@ -1,7 +1,10 @@
+const ProductTypeEnum = require("../../enum/ProductTypeEnum");
 const Cart = require("../models/Cart");
 const CartItem = require("../models/CartItem");
 const Plant = require("../models/Plant");
 const asyncHandler = require("express-async-handler");
+const Planter = require("../models/Planter");
+const Seed = require("../models/Seed");
 
 // Helper function to update total price of the cart
 const updateCartTotalPrice = async (user_id) => {
@@ -20,53 +23,167 @@ const updateCartTotalPrice = async (user_id) => {
 // Create a new CartItem (Add to Cart)
 const createCartItem = asyncHandler(async (req, res) => {
   try {
-    const { plant_id, quantity } = req.body;
+    const { product_id, product_type, custom_color, quantity } = req.body;
 
-    // Check if plant exists
-    const plant = await Plant.findById(plant_id);
-    if (!plant) {
-      res.status(404);
-      throw new Error("Plant not found");
-    }
+    switch (product_type) {
+      case ProductTypeEnum.PLANT: {
+        // Check if plant exists
+        const plant = await Plant.findById(product_id);
+        if (!plant) {
+          res.status(404);
+          throw new Error("Plant not found");
+        }
 
-    // Calculate total price
-    const item_total_price = plant.price * quantity;
+        // Calculate total price
+        const item_total_price = plant.price * quantity;
 
-    const cart = await Cart.findOne({ user_id: req.user.id }).populate(
-      "list_cart_item_id"
-    );
+        const cart = await Cart.findOne({ user_id: req.user.id }).populate(
+          "list_cart_item_id"
+        );
 
-    const checkExistCartItem = cart.list_cart_item_id.find(
-      (cartItem) => cartItem.plant_id.toString() == plant_id
-    );
+        const checkExistCartItem = cart.list_cart_item_id.find(
+          (cartItem) => cartItem.product_id.toString() == product_id
+        );
 
-    if (!checkExistCartItem) {
-      // Create new CartItem
-      const newCartItem = new CartItem({
-        plant_id,
-        quantity,
-        item_total_price,
-      });
-      await newCartItem.save();
+        if (!checkExistCartItem) {
+          // Create new CartItem
+          const newCartItem = new CartItem({
+            product_id,
+            product_type,
+            product: plant,
+            quantity,
+            item_total_price,
+          });
+          await newCartItem.save();
 
-      // Add the CartItem to the cart
-      cart.list_cart_item_id.push(newCartItem._id);
-      await cart.save();
+          // Add the CartItem to the cart
+          cart.list_cart_item_id.push(newCartItem._id);
+          await cart.save();
 
-      // Update the total price of the cart
-      await updateCartTotalPrice(req.user.id);
+          // Update the total price of the cart
+          await updateCartTotalPrice(req.user.id);
 
-      res.status(201).json(newCartItem);
-    } else {
-      // Update the existing CartItem
-      checkExistCartItem.quantity += quantity;
-      checkExistCartItem.item_total_price += item_total_price;
-      await checkExistCartItem.save();
+          res.status(201).json(newCartItem);
+        } else {
+          // Update the existing CartItem
+          checkExistCartItem.quantity += quantity;
+          checkExistCartItem.item_total_price += item_total_price;
+          await checkExistCartItem.save();
 
-      // Update the total price of the cart
-      await updateCartTotalPrice(req.user.id);
+          // Update the total price of the cart
+          await updateCartTotalPrice(req.user.id);
 
-      res.status(201).json(checkExistCartItem);
+          res.status(201).json(checkExistCartItem);
+        }
+        break;
+      }
+      case ProductTypeEnum.PLANTER: {
+        // Check if plant exists
+        const planter = await Planter.findById(product_id);
+        if (!planter) {
+          res.status(404);
+          throw new Error("Planter not found");
+        }
+
+        // Calculate total price
+        const item_total_price = planter.price * quantity;
+
+        const cart = await Cart.findOne({ user_id: req.user.id }).populate(
+          "list_cart_item_id"
+        );
+
+        const checkExistCartItem = cart.list_cart_item_id.find(
+          (cartItem) => cartItem.product_id.toString() == product_id
+        );
+
+        if (!checkExistCartItem) {
+          // Create new CartItem
+          const newCartItem = new CartItem({
+            product_id,
+            product_type,
+            product: planter,
+            custom_color: custom_color || undefined,
+            quantity,
+            item_total_price,
+          });
+          await newCartItem.save();
+
+          // Add the CartItem to the cart
+          cart.list_cart_item_id.push(newCartItem._id);
+          await cart.save();
+
+          // Update the total price of the cart
+          await updateCartTotalPrice(req.user.id);
+
+          res.status(201).json(newCartItem);
+        } else {
+          // Update the existing CartItem
+          checkExistCartItem.quantity += quantity;
+          checkExistCartItem.item_total_price += item_total_price;
+          await checkExistCartItem.save();
+
+          // Update the total price of the cart
+          await updateCartTotalPrice(req.user.id);
+
+          res.status(201).json(checkExistCartItem);
+        }
+        break;
+      }
+      case ProductTypeEnum.SEED: {
+        // Check if plant exists
+        const seed = await Seed.findById(product_id);
+        if (!seed) {
+          res.status(404);
+          throw new Error("Seed not found");
+        }
+
+        // Calculate total price
+        const item_total_price = seed.price * quantity;
+
+        const cart = await Cart.findOne({ user_id: req.user.id }).populate(
+          "list_cart_item_id"
+        );
+
+        const checkExistCartItem = cart.list_cart_item_id.find(
+          (cartItem) => cartItem.product_id.toString() == product_id
+        );
+
+        if (!checkExistCartItem) {
+          // Create new CartItem
+          const newCartItem = new CartItem({
+            product_id,
+            product_type,
+            product: seed,
+            quantity,
+            item_total_price,
+          });
+          await newCartItem.save();
+
+          // Add the CartItem to the cart
+          cart.list_cart_item_id.push(newCartItem._id);
+          await cart.save();
+
+          // Update the total price of the cart
+          await updateCartTotalPrice(req.user.id);
+
+          res.status(201).json(newCartItem);
+        } else {
+          // Update the existing CartItem
+          checkExistCartItem.quantity += quantity;
+          checkExistCartItem.item_total_price += item_total_price;
+          await checkExistCartItem.save();
+
+          // Update the total price of the cart
+          await updateCartTotalPrice(req.user.id);
+
+          res.status(201).json(checkExistCartItem);
+        }
+        break;
+      }
+      default: {
+        res.status(400);
+        throw new Error("Product type not supported");
+      }
     }
   } catch (error) {
     res
@@ -80,7 +197,7 @@ const getCartItemById = asyncHandler(async (req, res) => {
   try {
     const cartItem = await CartItem.findOne({
       _id: req.params.id,
-    }).populate("plant_id");
+    });
 
     if (!cartItem) {
       res.status(404);
@@ -107,7 +224,7 @@ const updateCartItem = asyncHandler(async (req, res) => {
 
     const cartItem = await CartItem.findOne({
       _id: req.params.id,
-    }).populate("plant_id");
+    });
 
     if (!cartItem) {
       res.status(404);
@@ -130,7 +247,7 @@ const updateCartItem = asyncHandler(async (req, res) => {
       res.status(200).json({ cartItem: "" });
     } else {
       cartItem.quantity = quantity;
-      cartItem.item_total_price = cartItem.plant_id.price * quantity;
+      cartItem.item_total_price = cartItem.product.price * quantity;
       await cartItem.save();
 
       // Update the total price of the cart

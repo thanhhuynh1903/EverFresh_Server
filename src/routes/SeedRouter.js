@@ -1,16 +1,16 @@
 const express = require("express");
 const {
-  createPlant,
-  getPlants,
-  getPlantById,
-  updatePlant,
-  searchPlantByName,
-  deletePlant,
-  updatePlantStatus,
-} = require("../app/controllers/PlantController");
+  createSeed,
+  getSeeds,
+  getSeedById,
+  updateSeed,
+  searchSeedByName,
+  deleteSeed,
+  updateSeedStatus,
+} = require("../app/controllers/SeedController");
 const { validateToken } = require("../app/middleware/validateTokenHandler");
 
-const PlantRouter = express.Router();
+const seedRouter = express.Router();
 
 /**
  * @swagger
@@ -25,15 +25,15 @@ const PlantRouter = express.Router();
 /**
  * @swagger
  * tags:
- *   name: Plants
- *   description: Plant management API
+ *   name: Seeds
+ *   description: Seed management API
  */
 
 /**
  * @swagger
  * components:
  *   schemas:
- *     Plant:
+ *     Seed:
  *       type: object
  *       required:
  *         - name
@@ -44,41 +44,41 @@ const PlantRouter = express.Router();
  *       properties:
  *         name:
  *           type: string
- *           description: Name of the plant
+ *           description: Name of the seed
  *         sub_name:
  *           type: string
- *           description: Secondary name or variety of the plant
+ *           description: Secondary name or variety of the seed
  *         genus_id:
  *           type: string
- *           description: ID of the genus this plant belongs to
+ *           description: ID of the genus this seed belongs to
  *         img_url:
  *           type: array
  *           items:
  *             type: string
- *           description: URLs to the images of the plant
+ *           description: URLs to the images of the seed
  *         video_url:
  *           type: array
  *           items:
  *             type: string
- *           description: URLs to the videos of the plant
+ *           description: URLs to the videos of the seed
  *         height:
  *           type: string
- *           description: Height of the plant
+ *           description: Height of the seed
  *         width:
  *           type: string
- *           description: Width of the plant
+ *           description: Width of the seed
  *         zones:
  *           type: string
- *           description: Climate zones where the plant can grow
+ *           description: Climate zones where the seed can grow
  *         uses:
  *           type: string
- *           description: Uses of the plant (e.g., ornamental, medicinal)
+ *           description: Uses of the seed (e.g., ornamental, medicinal)
  *         tolerance:
  *           type: string
- *           description: The plant's tolerance to conditions (e.g., drought, frost)
+ *           description: The seed's tolerance to conditions (e.g., drought, frost)
  *         bloom_time:
  *           type: string
- *           description: Blooming time of the plant
+ *           description: Blooming time of the seed
  *         light:
  *           type: string
  *           description: Light requirements (e.g., full sun, partial shade)
@@ -90,28 +90,28 @@ const PlantRouter = express.Router();
  *           description: Maintenance level required (e.g., low, moderate, high)
  *         growth_rate:
  *           type: string
- *           description: Growth rate of the plant
+ *           description: Growth rate of the seed
  *         plant_type_id:
  *           type: string
  *           description: ID of the plant type (e.g., shrub, tree, etc.)
  *         plant_seasonal_interest:
  *           type: string
- *           description: Seasonal interest of the plant (e.g., fall color, spring blooms)
+ *           description: Seasonal interest of the seed (e.g., fall color, spring blooms)
  *         describe:
  *           type: string
- *           description: General description of the plant
+ *           description: General description of the seed
  *         noteworthy_characteristics:
  *           type: string
- *           description: Noteworthy characteristics of the plant
+ *           description: Noteworthy characteristics of the seed
  *         care:
  *           type: string
- *           description: Care instructions for the plant
+ *           description: Care instructions for the seed
  *         propagation:
  *           type: string
- *           description: How to propagate the plant
+ *           description: How to propagate the seed
  *         problems:
  *           type: string
- *           description: Common problems with the plant
+ *           description: Common problems with the seed
  *         water:
  *           type: string
  *           description: Water requirements
@@ -123,16 +123,16 @@ const PlantRouter = express.Router();
  *           description: Fertilizer needs
  *         size:
  *           type: string
- *           description: Size of the plant
+ *           description: Size of the seed
  *         price:
  *           type: string
- *           description: Price of the plant
+ *           description: Price of the seed
  *       example:
  *         name: "Rose"
  *         sub_name: "Climbing Rose"
  *         genus_id: "67063c20591dd97cef2023bc"
  *         plant_type_id: "67063c3b591dd97cef2023c3"
- *         img_url: ["https://www.clareflorist.co.uk/images/product/promise-roses-main.jpg"]
+ *         img_url: ["https://cdn.mos.cms.futurecdn.net/a8JC3M6zFPkYvydLY95nXW.jpg"]
  *         video_url: ["https://example.com/rose-video.mp4"]
  *         height: "2 meters"
  *         width: "1 meter"
@@ -154,31 +154,31 @@ const PlantRouter = express.Router();
  *         humidity: "Moderate"
  *         fertilizer: "Use balanced fertilizer monthly"
  *         size: "Medium"
- *         price: "240000"
+ *         price: "150000"
  */
 
 /**
  * @swagger
- * /api/plants:
+ * /api/seeds:
  *   get:
- *     summary: Get all plants
- *     tags: [Plants]
+ *     summary: Get all Seeds
+ *     tags: [Seeds]
  *     responses:
  *       200:
- *         description: Returns an array of plants
+ *         description: Returns an array of Seeds
  *       401:
  *         description: Unauthorized
  *       500:
  *         description: Internal server error
  */
-PlantRouter.route("/").get(getPlants);
+seedRouter.route("/").get(getSeeds);
 
 /**
  * @swagger
- * /api/plants/search:
+ * /api/seeds/search:
  *   get:
- *     summary: Search plants by name
- *     tags: [Plants]
+ *     summary: Search Seeds by name
+ *     tags: [Seeds]
  *     parameters:
  *       - in: query
  *         name: searchName
@@ -187,20 +187,20 @@ PlantRouter.route("/").get(getPlants);
  *         description: The name of the plant to search
  *     responses:
  *       200:
- *         description: Returns matching plants
+ *         description: Returns matching Seeds
  *       400:
  *         description: Missing searchName parameter
  *       401:
  *         description: Unauthorized
  */
-PlantRouter.route("/search").get(searchPlantByName);
+seedRouter.route("/search").get(searchSeedByName);
 
 /**
  * @swagger
- * /api/plants:
+ * /api/seeds:
  *   post:
- *     summary: Create a new plant (Admin only)
- *     tags: [Plants]
+ *     summary: Create a new Seeds (Admin only)
+ *     tags: [Seeds]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -211,53 +211,54 @@ PlantRouter.route("/search").get(searchPlantByName);
  *             $ref: '#/components/schemas/Seed'
  *     responses:
  *       201:
- *         description: Plant created successfully
+ *         description: Seed created successfully
  *       400:
  *         description: Invalid input
  *       401:
  *         description: Unauthorized
  */
-PlantRouter.route("/").post(validateToken, createPlant);
+seedRouter.route("/").post(validateToken, createSeed);
 
 /**
  * @swagger
- * /api/plants/{plant_id}:
+ * /api/seeds/{seed_id}:
  *   get:
- *     summary: Get plant by ID
- *     tags: [Plants]
+ *     summary: Get Seed by ID
+ *     tags: [Seeds]
  *     parameters:
  *       - in: path
- *         name: plant_id
+ *         name: seed_id
  *         required: true
  *         schema:
  *           type: string
- *         description: The plant ID
+ *         description: The Seed ID
  *     responses:
  *       200:
- *         description: Returns the plant
+ *         description: Returns the Seed
  *       401:
  *         description: Unauthorized
  *       404:
- *         description: Plant not found
+ *         description: Seed not found
  */
-PlantRouter.route("/:plant_id")
-  .get(getPlantById)
+seedRouter
+  .route("/:seed_id")
+  .get(getSeedById)
 
   /**
    * @swagger
-   * /api/plants/{plant_id}:
+   * /api/seeds/{seed_id}:
    *   put:
-   *     summary: Update a plant by ID (Admin only)
-   *     tags: [Plants]
+   *     summary: Update a Seed by ID (Admin only)
+   *     tags: [Seeds]
    *     security:
    *       - bearerAuth: []
    *     parameters:
    *       - in: path
-   *         name: plant_id
+   *         name: seed_id
    *         required: true
    *         schema:
    *           type: string
-   *         description: The plant ID
+   *         description: The Seed ID
    *     requestBody:
    *       required: true
    *       content:
@@ -266,54 +267,54 @@ PlantRouter.route("/:plant_id")
    *             $ref: '#/components/schemas/Seed'
    *     responses:
    *       200:
-   *         description: Plant updated successfully
+   *         description: Seed updated successfully
    *       401:
    *         description: Unauthorized
    *       404:
-   *         description: Plant not found
+   *         description: Seed not found
    */
-  .put(validateToken, updatePlant)
+  .put(validateToken, updateSeed)
 
   /**
    * @swagger
-   * /api/plants/{plant_id}:
+   * /api/seeds/{seed_id}:
    *   delete:
-   *     summary: Delete a plant by ID (Admin only)
-   *     tags: [Plants]
+   *     summary: Delete a Seed by ID (Admin only)
+   *     tags: [Seeds]
    *     security:
    *       - bearerAuth: []
    *     parameters:
    *       - in: path
-   *         name: plant_id
+   *         name: seed_id
    *         required: true
    *         schema:
    *           type: string
-   *         description: The plant ID
+   *         description: The Seed ID
    *     responses:
    *       200:
-   *         description: Plant deleted successfully
+   *         description: Seed deleted successfully
    *       401:
    *         description: Unauthorized
    *       404:
-   *         description: Plant not found
+   *         description: Seed not found
    */
-  .delete(validateToken, deletePlant);
+  .delete(validateToken, deleteSeed);
 
 /**
  * @swagger
- * /api/plants/status/{plant_id}:
+ * /api/seeds/status/{seed_id}:
  *   put:
- *     summary: Update a plant status by ID (Admin only)
- *     tags: [Plants]
+ *     summary: Update a Seed status by ID (Admin only)
+ *     tags: [Seeds]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: plant_id
+ *         name: seed_id
  *         required: true
  *         schema:
  *           type: string
- *         description: The plant ID
+ *         description: The Seed ID
  *     requestBody:
  *       required: true
  *       content:
@@ -323,16 +324,16 @@ PlantRouter.route("/:plant_id")
  *             properties:
  *               status:
  *                 type: string
- *                 description: Status of the plant
+ *                 description: Status of the Seed
  *                 example: "Out of Stock"
  *     responses:
  *       200:
- *         description: Plant updated successfully
+ *         description: Seed updated successfully
  *       401:
  *         description: Unauthorized
  *       404:
- *         description: Plant not found
+ *         description: Seed not found
  */
-PlantRouter.route("/status/:plant_id").put(validateToken, updatePlantStatus);
+seedRouter.route("/status/:seed_id").put(validateToken, updateSeedStatus);
 
-module.exports = PlantRouter;
+module.exports = seedRouter;

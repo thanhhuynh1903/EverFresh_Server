@@ -74,6 +74,8 @@ const galleryRouter = require("./src/routes/GalleryRouter");
 const collectionRouter = require("./src/routes/CollectionRouter");
 const ratingRouter = require("./src/routes/RatingRouter");
 const linkedInformationRouter = require("./src/routes/LinkedInformationRouter");
+const planterRouter = require("./src/routes/PlanterRouter");
+const seedRouter = require("./src/routes/SeedRouter");
 
 //static folder path
 app.use(express.static(path.resolve(__dirname, "public")));
@@ -96,6 +98,8 @@ app.use("/api/ratings", ratingRouter);
 app.use("/api/galleries", galleryRouter);
 app.use("/api/collections", collectionRouter);
 app.use("/api/linked-information", linkedInformationRouter);
+app.use("/api/planters", planterRouter);
+app.use("/api/seeds", seedRouter);
 
 // Global error handler
 app.use(errorHandler);
@@ -140,6 +144,8 @@ const options = {
     "./src/routes/GalleryRouter.js",
     "./src/routes/CollectionRouter.js",
     "./src/routes/LinkedInformationRouter.js",
+    "./src/routes/PlanterRouter.js",
+    "./src/routes/SeedRouter.js",
   ],
 };
 

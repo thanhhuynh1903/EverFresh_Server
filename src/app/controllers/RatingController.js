@@ -3,18 +3,54 @@ const Plant = require("../models/Plant");
 const Rating = require("../models/Rating");
 const asyncHandler = require("express-async-handler");
 const OrderStatusEnum = require("../../enum/OrderStatusEnum");
+const ProductTypeEnum = require("../../enum/ProductTypeEnum");
+const Planter = require("../models/Planter");
+const Seed = require("../models/Seed");
 
 // Helper to calculate and update the average rating of a plant
-const updateAverageRating = async (plantId) => {
-  const ratings = await Rating.find({ plant_id: plantId });
-  if (ratings.length === 0) {
-    await Plant.findByIdAndUpdate(plantId, { average_rating: 0 });
-  } else {
-    const average = (
-      ratings.reduce((acc, rating) => acc + parseInt(rating.star), 0) /
-      ratings.length
-    ).toFixed(1);
-    await Plant.findByIdAndUpdate(plantId, { average_rating: average });
+const updateAverageRating = async (product_id, product_type) => {
+  switch (product_type) {
+    case ProductTypeEnum.PLANT: {
+      const ratings = await Rating.find({ product_id });
+      if (ratings.length === 0) {
+        await Plant.findByIdAndUpdate(product_id, { average_rating: 0 });
+      } else {
+        const average = (
+          ratings.reduce((acc, rating) => acc + parseInt(rating.star), 0) /
+          ratings.length
+        ).toFixed(1);
+        await Plant.findByIdAndUpdate(product_id, { average_rating: average });
+      }
+      break;
+    }
+    case ProductTypeEnum.PLANTER: {
+      const ratings = await Rating.find({ product_id });
+      if (ratings.length === 0) {
+        await Planter.findByIdAndUpdate(product_id, { average_rating: 0 });
+      } else {
+        const average = (
+          ratings.reduce((acc, rating) => acc + parseInt(rating.star), 0) /
+          ratings.length
+        ).toFixed(1);
+        await Planter.findByIdAndUpdate(product_id, {
+          average_rating: average,
+        });
+      }
+      break;
+    }
+    case ProductTypeEnum.SEED: {
+      const ratings = await Rating.find({ product_id });
+      if (ratings.length === 0) {
+        await Seed.findByIdAndUpdate(product_id, { average_rating: 0 });
+      } else {
+        const average = (
+          ratings.reduce((acc, rating) => acc + parseInt(rating.star), 0) /
+          ratings.length
+        ).toFixed(1);
+        await Seed.findByIdAndUpdate(product_id, { average_rating: average });
+      }
+      break;
+    }
   }
 };
 
@@ -23,14 +59,8 @@ const updateAverageRating = async (plantId) => {
  * @route GET /api/ratings/:plant_id
  * @access Public
  */
-const getAllRatingsForPlant = asyncHandler(async (req, res) => {
+const getAllRatingsForProduct = asyncHandler(async (req, res) => {
   try {
-    const plant = await Plant.findById(req.params.plant_id);
-    if (!plant) {
-      res.status(404);
-      throw new Error("Plant not found");
-    }
-
     const ratings = await Rating.find({
       plant_id: req.params.plant_id,
     }).populate("user_id");
@@ -59,7 +89,7 @@ const getAllRatingsOfOrder = asyncHandler(async (req, res) => {
     const ratings = await Rating.find({
       order_id: req.params.order_id,
       user_id: req.user.id,
-    }).populate("plant_id");
+    });
 
     res.status(200).json(ratings);
   } catch (error) {
@@ -76,9 +106,9 @@ const getAllRatingsOfOrder = asyncHandler(async (req, res) => {
  */
 const createRating = asyncHandler(async (req, res) => {
   try {
-    const { order_id, plant_id, star, comment } = req.body;
+    const { order_id, product_id, product_type, star, comment } = req.body;
 
-    if (!order_id || !plant_id || !star || !comment) {
+    if (!order_id || !product_id || !product_type || !star || !comment) {
       res.status(400);
       throw new Error("All fields are required");
     }
@@ -91,52 +121,158 @@ const createRating = asyncHandler(async (req, res) => {
       res.status(404);
       throw new Error("No order found");
     }
+    switch (product_type) {
+      case ProductTypeEnum.PLANT: {
+        const plant = await Plant.findById(product_id);
+        if (!plant) {
+          res.status(404);
+          throw new Error("No plant found");
+        }
 
-    const plant = await Plant.findById(plant_id);
-    if (!plant) {
-      res.status(404);
-      throw new Error("No plant found");
+        const checkPlantExistInOrder = order.list_cart_item_id.find(
+          (cart_item) => cart_item.product_id.toString() === product_id
+        );
+
+        if (!checkPlantExistInOrder) {
+          res.status(400);
+          throw new Error("No plant found in order");
+        }
+
+        if (order.status !== OrderStatusEnum.DELIVERED) {
+          res.status(400);
+          throw new Error("Order status is not allowed for rating");
+        }
+
+        const IsExistRatingOfPlantOfOrder = await Rating.findOne({
+          order_id,
+          product_id,
+          user_id: req.user.id,
+        });
+
+        if (IsExistRatingOfPlantOfOrder) {
+          res.status(400);
+          throw new Error("Plant in order is already rated");
+        }
+
+        const newRating = new Rating({
+          order_id,
+          product_id,
+          product_type,
+          product: plant,
+          user_id: req.user.id,
+          star,
+          comment,
+        });
+
+        const createdRating = await newRating.save();
+
+        // Update average rating for the plant
+        await updateAverageRating(product_id, product_type);
+
+        res.status(201).json(createdRating);
+        break;
+      }
+      case ProductTypeEnum.PLANTER: {
+        const planter = await Planter.findById(product_id);
+        if (!planter) {
+          res.status(404);
+          throw new Error("No planter found");
+        }
+
+        const checkPlanterExistInOrder = order.list_cart_item_id.find(
+          (cart_item) => cart_item.product_id.toString() === product_id
+        );
+
+        if (!checkPlanterExistInOrder) {
+          res.status(400);
+          throw new Error("No planter found in order");
+        }
+
+        if (order.status !== OrderStatusEnum.DELIVERED) {
+          res.status(400);
+          throw new Error("Order status is not allowed for rating");
+        }
+
+        const IsExistRatingOfPlanterOfOrder = await Rating.findOne({
+          order_id,
+          product_id,
+          user_id: req.user.id,
+        });
+
+        if (IsExistRatingOfPlanterOfOrder) {
+          res.status(400);
+          throw new Error("Planter in order is already rated");
+        }
+
+        const newRating = new Rating({
+          order_id,
+          product_id,
+          product_type,
+          product: planter,
+          user_id: req.user.id,
+          star,
+          comment,
+        });
+
+        const createdRating = await newRating.save();
+
+        // Update average rating for the planter
+        await updateAverageRating(product_id, product_type);
+
+        res.status(201).json(createdRating);
+        break;
+      }
+      case ProductTypeEnum.SEED: {
+        const seed = await Seed.findById(product_id);
+        if (!seed) {
+          res.status(404);
+          throw new Error("No Seed found");
+        }
+
+        const checkSeedExistInOrder = order.list_cart_item_id.find(
+          (cart_item) => cart_item.product_id.toString() === product_id
+        );
+
+        if (!checkSeedExistInOrder) {
+          res.status(400);
+          throw new Error("No Seed found in order");
+        }
+
+        if (order.status !== OrderStatusEnum.DELIVERED) {
+          res.status(400);
+          throw new Error("Order status is not allowed for rating");
+        }
+
+        const IsExistRatingOfSeedOfOrder = await Rating.findOne({
+          order_id,
+          product_id,
+          user_id: req.user.id,
+        });
+
+        if (IsExistRatingOfSeedOfOrder) {
+          res.status(400);
+          throw new Error("Seed in order is already rated");
+        }
+
+        const newRating = new Rating({
+          order_id,
+          product_id,
+          product_type,
+          product: seed,
+          user_id: req.user.id,
+          star,
+          comment,
+        });
+
+        const createdRating = await newRating.save();
+
+        // Update average rating for the Seed
+        await updateAverageRating(product_id, product_type);
+
+        res.status(201).json(createdRating);
+        break;
+      }
     }
-
-    const checkPlantExistInOrder = order.list_cart_item_id.find(
-      (item) => item.plant_id.toString() === plant_id
-    );
-
-    if (!checkPlantExistInOrder) {
-      res.status(400);
-      throw new Error("No plant found in order");
-    }
-
-    if (order.status !== OrderStatusEnum.DELIVERED) {
-      res.status(400);
-      throw new Error("Order status is not allowed for rating");
-    }
-
-    const IsExistRatingOfPlantOfOrder = await Rating.findOne({
-      order_id,
-      plant_id,
-      user_id: req.user.id,
-    });
-
-    if (IsExistRatingOfPlantOfOrder) {
-      res.status(400);
-      throw new Error("Plant in order is already rated");
-    }
-
-    const newRating = new Rating({
-      order_id,
-      plant_id,
-      user_id: req.user.id,
-      star,
-      comment,
-    });
-
-    const createdRating = await newRating.save();
-
-    // Update average rating for the plant
-    await updateAverageRating(plant_id);
-
-    res.status(201).json(createdRating);
   } catch (error) {
     res
       .status(res.statusCode || 500)
@@ -168,7 +304,7 @@ const updateRatingById = asyncHandler(async (req, res) => {
     const updatedRating = await rating.save();
 
     // Update average rating for the plant
-    await updateAverageRating(rating.plant_id);
+    await updateAverageRating(rating.product_id, rating.product_type);
 
     res.status(200).json(updatedRating);
   } catch (error) {
@@ -197,7 +333,7 @@ const deleteRatingById = asyncHandler(async (req, res) => {
     await rating.remove();
 
     // Update average rating for the plant
-    await updateAverageRating(rating.plant_id);
+    await updateAverageRating(rating.product_id, rating.product_type);
 
     res.status(200).json({ message: "Rating deleted" });
   } catch (error) {
@@ -208,7 +344,7 @@ const deleteRatingById = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  getAllRatingsForPlant,
+  getAllRatingsForProduct,
   getAllRatingsOfOrder,
   createRating,
   updateRatingById,

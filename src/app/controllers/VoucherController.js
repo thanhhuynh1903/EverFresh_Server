@@ -1,3 +1,4 @@
+const VoucherStatusEnum = require("../../enum/VoucherStatusEnum");
 const Voucher = require("../models/Voucher");
 const asyncHandler = require("express-async-handler");
 
@@ -11,6 +12,8 @@ const createVoucher = asyncHandler(async (req, res) => {
       start_day,
       end_day,
       voucher_discount,
+      is_percent,
+      quantity,
     } = req.body;
 
     if (
@@ -18,7 +21,9 @@ const createVoucher = asyncHandler(async (req, res) => {
       !voucher_name ||
       !start_day ||
       !end_day ||
-      !voucher_discount
+      is_percent === undefined ||
+      !voucher_discount ||
+      !quantity
     ) {
       res.status(400);
       throw new Error("All fields are required except description");
@@ -30,6 +35,11 @@ const createVoucher = asyncHandler(async (req, res) => {
       throw new Error("Voucher code already exists");
     }
 
+    if (voucher_discount < 0) {
+      res.status(400);
+      throw new Error("Discount is must greater than zero");
+    }
+
     const newVoucher = new Voucher({
       voucher_code,
       voucher_name,
@@ -37,6 +47,9 @@ const createVoucher = asyncHandler(async (req, res) => {
       start_day,
       end_day,
       voucher_discount,
+      is_percent,
+      quantity: quantity || undefined,
+      status: VoucherStatusEnum.VALID,
     });
     await newVoucher.save();
 
@@ -50,6 +63,18 @@ const createVoucher = asyncHandler(async (req, res) => {
 
 // Get all Vouchers
 const getAllVouchers = asyncHandler(async (req, res) => {
+  try {
+    const vouchers = await Voucher.find({ status: VoucherStatusEnum.VALID });
+    res.status(200).json(vouchers);
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
+// Get all Vouchers
+const getAllVouchersForAdmin = asyncHandler(async (req, res) => {
   try {
     const vouchers = await Voucher.find();
     res.status(200).json(vouchers);
@@ -86,6 +111,8 @@ const updateVoucher = asyncHandler(async (req, res) => {
       start_day,
       end_day,
       voucher_discount,
+      is_percent,
+      quantity,
     } = req.body;
 
     const voucher = await Voucher.findById(req.params.id);
@@ -109,10 +136,62 @@ const updateVoucher = asyncHandler(async (req, res) => {
     voucher.start_day = start_day || voucher.start_day;
     voucher.end_day = end_day || voucher.end_day;
     voucher.voucher_discount = voucher_discount || voucher.voucher_discount;
+    voucher.is_percent = is_percent || voucher.is_percent;
+    voucher.quantity = quantity || voucher.quantity;
 
     await voucher.save();
 
     res.status(200).json(voucher);
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
+// Update a Voucher by ID
+const updateVoucherStatus = asyncHandler(async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const voucher = await Voucher.findById(req.params.id);
+    if (!voucher) {
+      res.status(404);
+      throw new Error("Voucher not found");
+    }
+
+    switch (status) {
+      case VoucherStatusEnum.VALID: {
+        const updateVoucherStatus = await Voucher.findByIdAndUpdate(
+          req.params.id,
+          { status: VoucherStatusEnum.VALID },
+          { new: true }
+        );
+        if (!updateVoucherStatus) {
+          res.status(500);
+          throw new Error("Something went wrong updating Voucher status");
+        }
+        res.status(200).json(updateVoucherStatus);
+        break;
+      }
+      case VoucherStatusEnum.IN_VALID: {
+        const updateVoucherStatus = await Voucher.findByIdAndUpdate(
+          req.params.id,
+          { status: VoucherStatusEnum.IN_VALID },
+          { new: true }
+        );
+        if (!updateVoucherStatus) {
+          res.status(500);
+          throw new Error("Something went wrong updating Voucher status");
+        }
+        res.status(200).json(updateVoucherStatus);
+        break;
+      }
+      default: {
+        res.status(400);
+        throw new Error("Invalid status");
+      }
+    }
   } catch (error) {
     res
       .status(res.statusCode || 500)
@@ -141,7 +220,9 @@ const deleteVoucher = asyncHandler(async (req, res) => {
 module.exports = {
   createVoucher,
   getAllVouchers,
+  getAllVouchersForAdmin,
   getVoucherById,
   updateVoucher,
+  updateVoucherStatus,
   deleteVoucher,
 };

@@ -11,6 +11,9 @@ const OrderStatusEnum = require("../../enum/OrderStatusEnum");
 const LinkedInformation = require("../models/LinkedInformation");
 const User = require("../models/User");
 const UserRankEnum = require("../../enum/UserRankEnum");
+const VoucherStatusEnum = require("../../enum/VoucherStatusEnum");
+const ProductTypeEnum = require("../../enum/ProductTypeEnum");
+const PlanterCategoryEnum = require("../../enum/PlanterCategoryEnum");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
@@ -67,6 +70,10 @@ const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
       if (!voucher) {
         res.status(404);
         throw new Error("Voucher not found");
+      }
+      if (voucher.status !== VoucherStatusEnum.VALID) {
+        res.status(400);
+        throw new Error("Voucher is InValid");
       }
     }
 
@@ -236,7 +243,6 @@ const createUpRankMoMoPaymentUrl = asyncHandler(async (req, res) => {
 
 const paymentMoMoCallback = asyncHandler(async (req, res) => {
   try {
-    console.log(req.query);
     if (req.query.message === "Thành công.") {
       const data = req.query.orderId.split("-");
       const customer_id = data[0];
@@ -260,15 +266,23 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
         let voucher = null;
         if (voucher_id !== currentTime) {
           voucher = await Voucher.findById(voucher_id);
+
+          if (voucher.quantity <= 1) {
+            voucher.status = VoucherStatusEnum.IN_VALID;
+            await voucher.save();
+          }
         }
 
         const total_price = voucher
-          ? cart.total_price -
-            (cart.total_price * voucher.voucher_discount) / 100 +
-            deliveryMethod.price
+          ? voucher.is_percent
+            ? cart.total_price -
+              (cart.total_price * voucher.voucher_discount) / 100 +
+              deliveryMethod.price
+            : cart.total_price - voucher.voucher_discount + deliveryMethod.price
           : cart.total_price + deliveryMethod.price;
 
         const newOrder = new Order({
+          order_code: req.query.orderId,
           customer_id,
           payment_method: PaymentMethodEnum.MOMO,
           voucher_id: voucher_id !== currentTime ? voucher_id : null,
@@ -283,6 +297,12 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
           },
           total_price: total_price,
           list_cart_item_id: cart.list_cart_item_id,
+          tracking_status_dates: [
+            {
+              key: "order_confirmed_date",
+              value: new Date(),
+            },
+          ],
           status: OrderStatusEnum.CONFIRMED,
         });
 
@@ -334,10 +354,6 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
 
     const cart = await Cart.findById(cart_id).populate({
       path: "list_cart_item_id",
-      populate: {
-        path: "plant_id",
-        model: "Plant",
-      },
     });
     if (!cart) {
       res.status(404);
@@ -381,6 +397,11 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
       if (!voucher) {
         res.status(404);
         throw new Error("Voucher not found");
+      }
+
+      if (voucher.status !== VoucherStatusEnum.VALID) {
+        res.status(400);
+        throw new Error("Voucher is InValid");
       }
     }
 
@@ -448,37 +469,29 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
       });
     }
 
-    const paymentMethod = await stripe.paymentMethods.retrieve(
-      linkedInformation.stripe_card_id
-    );
-    if (!paymentMethod.customer) {
-      await stripe.paymentMethods.attach(linkedInformation.stripe_card_id, {
-        customer: customer.id,
-      });
-
-      await stripe.customers.update(customer.id, {
-        invoice_settings: {
-          default_payment_method: linkedInformation.stripe_card_id,
-        },
-      });
-    }
+    cart.list_cart_item_id.map((cart_item) => console.log(cart_item.product));
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      payment_intent_data: {
-        setup_future_usage: "off_session",
-      },
-      line_items: cart.list_cart_item_id.map((item) => ({
+      line_items: cart.list_cart_item_id.map((cart_item) => ({
         price_data: {
           currency: "vnd",
           product_data: {
-            name: `${item.plant_id.name}: ${item.plant_id.sub_name}`,
-            images: item.plant_id.img_url,
-            description: item.plant_id.describe ? item.plant_id.describe : "",
+            name:
+              cart_item.product_type === ProductTypeEnum.PLANTER
+                ? `${cart_item.product.name}`
+                : `${cart_item.product.name}`,
+            images:
+              cart_item.product_type === ProductTypeEnum.PLANTER
+                ? [cart_item.product.img_object[0].img_url]
+                : cart_item.product.img_url,
+            description: cart_item.product.describe
+              ? cart_item.product.describe
+              : "",
           },
-          unit_amount: item.plant_id.price,
+          unit_amount: cart_item.product.price,
         },
-        quantity: item.quantity,
+        quantity: cart_item.quantity,
       })),
       shipping_options: [
         {
@@ -614,15 +627,23 @@ const paymentStripeCallback = asyncHandler(async (req, res) => {
         let voucher = null;
         if (voucher_id !== currentTime) {
           voucher = await Voucher.findById(voucher_id);
+
+          if (voucher.quantity <= 1) {
+            voucher.status = VoucherStatusEnum.IN_VALID;
+            await voucher.save();
+          }
         }
 
         const total_price = voucher
-          ? cart.total_price -
-            (cart.total_price * voucher.voucher_discount) / 100 +
-            deliveryMethod.price
+          ? voucher.is_percent
+            ? cart.total_price -
+              (cart.total_price * voucher.voucher_discount) / 100 +
+              deliveryMethod.price
+            : cart.total_price - voucher.voucher_discount + deliveryMethod.price
           : cart.total_price + deliveryMethod.price;
 
         const newOrder = new Order({
+          order_code: result.metadata.order_id,
           customer_id,
           payment_method: PaymentMethodEnum.STRIPE,
           voucher_id: voucher_id !== currentTime ? voucher_id : null,
@@ -637,6 +658,12 @@ const paymentStripeCallback = asyncHandler(async (req, res) => {
           },
           total_price: total_price,
           list_cart_item_id: cart.list_cart_item_id,
+          tracking_status_dates: [
+            {
+              key: "order_confirmed_date",
+              value: new Date(),
+            },
+          ],
           status: OrderStatusEnum.CONFIRMED,
         });
 

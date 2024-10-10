@@ -8,6 +8,8 @@ const {
   createCart,
   getCart,
   getSuggestionPlant,
+  getSuggestionPlanter,
+  getSuggestionSeed,
 } = require("../app/controllers/CartController");
 
 cartRouter.use(validateTokenCustomer); // Ensure customer-only access
@@ -70,5 +72,41 @@ cartRouter.route("/").get(getCart);
  *         description: Internal server error
  */
 cartRouter.route("/suggestion-plant").get(getSuggestionPlant);
+
+/**
+ * @swagger
+ * /api/cart/suggestion-planter:
+ *   get:
+ *     summary: Get the suggestion planter
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Cart]
+ *     responses:
+ *       200:
+ *         description: Customer's cart data
+ *       404:
+ *         description: Cart not found
+ *       500:
+ *         description: Internal server error
+ */
+cartRouter.route("/suggestion-planter").get(getSuggestionPlanter);
+
+/**
+ * @swagger
+ * /api/cart/suggestion-seed:
+ *   get:
+ *     summary: Get the suggestion seed
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Cart]
+ *     responses:
+ *       200:
+ *         description: Customer's cart data
+ *       404:
+ *         description: Cart not found
+ *       500:
+ *         description: Internal server error
+ */
+cartRouter.route("/suggestion-seed").get(getSuggestionSeed);
 
 module.exports = cartRouter;

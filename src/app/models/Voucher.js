@@ -22,10 +22,20 @@ const voucherSchema = mongoose.Schema(
       type: Date,
       required: true,
     },
+    is_percent: {
+      type: Boolean,
+      required: true,
+    },
     voucher_discount: {
       type: Number,
-      min: 0,
-      max: 100,
+      required: true,
+    },
+    quantity: {
+      type: Number,
+      required: true,
+    },
+    status: {
+      type: String,
       required: true,
     },
   },

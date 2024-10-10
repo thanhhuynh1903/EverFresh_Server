@@ -72,6 +72,12 @@ const updatePlantType = asyncHandler(async (req, res) => {
       throw new Error("Plant type not found");
     }
 
+    const existingPlantType = await PlantType.findOne({ plant_type_name });
+    if (existingPlantType) {
+      res.status(400);
+      throw new Error("Plant type already exists");
+    }
+
     plantType.plant_type_name = plant_type_name;
     await plantType.save();
 

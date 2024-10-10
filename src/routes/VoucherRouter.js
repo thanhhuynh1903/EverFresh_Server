@@ -11,6 +11,8 @@ const {
   getVoucherById,
   updateVoucher,
   deleteVoucher,
+  getAllVouchersForAdmin,
+  updateVoucherStatus,
 } = require("../app/controllers/VoucherController");
 
 /**
@@ -35,6 +37,22 @@ const {
  *         description: Internal server error
  */
 voucherRouter.route("/").get(validateToken, getAllVouchers);
+
+/**
+ * @swagger
+ * /api/vouchers/admin:
+ *   get:
+ *     summary: Get all vouchers
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Voucher]
+ *     responses:
+ *       200:
+ *         description: List of all vouchers
+ *       500:
+ *         description: Internal server error
+ */
+voucherRouter.route("/admin").get(validateTokenAdmin, getAllVouchersForAdmin);
 
 /**
  * @swagger
@@ -63,7 +81,11 @@ voucherRouter.route("/").get(validateToken, getAllVouchers);
  *               end_day:
  *                 type: string
  *                 format: date
+ *               is_percent:
+ *                 type: boolean
  *               voucher_discount:
+ *                 type: number
+ *               quantity:
  *                 type: number
  *     responses:
  *       201:
@@ -134,7 +156,11 @@ voucherRouter.route("/:id").get(validateToken, getVoucherById);
  *               end_day:
  *                 type: string
  *                 format: date
+ *               is_percent:
+ *                 type: boolean
  *               voucher_discount:
+ *                 type: number
+ *               quantity:
  *                 type: number
  *     responses:
  *       200:
@@ -145,6 +171,40 @@ voucherRouter.route("/:id").get(validateToken, getVoucherById);
  *         description: Internal server error
  */
 voucherRouter.route("/:id").put(validateTokenAdmin, updateVoucher);
+
+/**
+ * @swagger
+ * /api/vouchers/status/{id}:
+ *   put:
+ *     summary: Update a voucher status by ID (Admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Voucher]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the voucher
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Voucher updated successfully
+ *       404:
+ *         description: Voucher not found
+ *       500:
+ *         description: Internal server error
+ */
+voucherRouter.route("/status/:id").put(validateTokenAdmin, updateVoucherStatus);
 
 /**
  * @swagger

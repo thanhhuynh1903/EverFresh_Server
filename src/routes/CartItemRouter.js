@@ -35,7 +35,11 @@ cartItemRouter.use(validateToken);
  *           schema:
  *             type: object
  *             properties:
- *               plant_id:
+ *               product_id:
+ *                 type: string
+ *               product_type:
+ *                 type: string
+ *               custom_color:
  *                 type: string
  *               quantity:
  *                 type: number

@@ -109,10 +109,6 @@ const getAllOrders = asyncHandler(async (req, res) => {
       .populate("voucher_id")
       .populate({
         path: "list_cart_item_id",
-        populate: {
-          path: "plant_id",
-          model: "Plant",
-        },
       });
 
     res.status(200).json(orders);
@@ -126,15 +122,9 @@ const getAllOrders = asyncHandler(async (req, res) => {
 // Get all orders for Admin
 const getAllOrdersForAdmin = asyncHandler(async (req, res) => {
   try {
-    const orders = await Order.find()
-      .populate("voucher_id")
-      .populate({
-        path: "list_cart_item_id",
-        populate: {
-          path: "plant_id",
-          model: "Plant",
-        },
-      });
+    const orders = await Order.find().populate("voucher_id").populate({
+      path: "list_cart_item_id",
+    });
 
     res.status(200).json(orders);
   } catch (error) {
@@ -151,10 +141,6 @@ const getOrderById = asyncHandler(async (req, res) => {
       .populate("voucher_id")
       .populate({
         path: "list_cart_item_id",
-        populate: {
-          path: "plant_id",
-          model: "Plant",
-        },
       });
 
     if (!order) {
@@ -182,10 +168,6 @@ const changeStatusToFailedDelivery = asyncHandler(async (req, res) => {
       .populate("voucher_id")
       .populate({
         path: "list_cart_item_id",
-        populate: {
-          path: "plant_id",
-          model: "Plant",
-        },
       });
 
     if (!order) {
@@ -197,11 +179,15 @@ const changeStatusToFailedDelivery = asyncHandler(async (req, res) => {
       res.status(400);
       throw new Error("Order status is not suitable");
     }
-
+    const tracking_status_dates = order.tracking_status_dates.push({
+      key: "failed_delivery",
+      value: new Date(),
+    });
     const updatedOrder = await Order.findByIdAndUpdate(
       req.params.id,
       {
         status: OrderStatusEnum.FAILED_DELIVERY,
+        tracking_status_dates: tracking_status_dates,
         failed_delivery_note,
       },
       {
@@ -230,10 +216,6 @@ const changeOrderStatus = asyncHandler(async (req, res) => {
       .populate("voucher_id")
       .populate({
         path: "list_cart_item_id",
-        populate: {
-          path: "plant_id",
-          model: "Plant",
-        },
       });
 
     if (!order) {
@@ -243,60 +225,78 @@ const changeOrderStatus = asyncHandler(async (req, res) => {
 
     switch (order.status) {
       case OrderStatusEnum.CONFIRMED: {
+        const tracking_status_dates = [
+          ...order.tracking_status_dates,
+          { key: "shipped_date", value: new Date() },
+        ];
+
         const updatedOrderStatus = await Order.findByIdAndUpdate(
           order._id,
           {
             status: OrderStatusEnum.SHIPPED,
+            tracking_status_dates: tracking_status_dates,
           },
-          {
-            new: true,
-          }
+          { new: true }
         );
+
         if (!updatedOrderStatus) {
           res.status(500);
           throw new Error(
             "Something went wrong updating order status to Shipped"
           );
         }
+
         res.status(200).json(updatedOrderStatus);
         break;
       }
       case OrderStatusEnum.SHIPPED: {
+        const tracking_status_dates = [
+          ...order.tracking_status_dates,
+          { key: "out_of_delivery_date", value: new Date() },
+        ];
+
         const updatedOrderStatus = await Order.findByIdAndUpdate(
           order._id,
           {
             status: OrderStatusEnum.OUT_OF_DELIVERY,
+            tracking_status_dates: tracking_status_dates,
           },
-          {
-            new: true,
-          }
+          { new: true }
         );
+
         if (!updatedOrderStatus) {
           res.status(500);
           throw new Error(
             "Something went wrong updating order status to Out of Delivery"
           );
         }
+
         res.status(200).json(updatedOrderStatus);
         break;
       }
       case OrderStatusEnum.OUT_OF_DELIVERY: {
+        const tracking_status_dates = [
+          ...order.tracking_status_dates,
+          { key: "delivered_date", value: new Date() },
+        ];
+
         const updatedOrderStatus = await Order.findByIdAndUpdate(
           order._id,
           {
             status: OrderStatusEnum.DELIVERED,
+            tracking_status_dates: tracking_status_dates,
             delivered_date: new Date(),
           },
-          {
-            new: true,
-          }
+          { new: true }
         );
+
         if (!updatedOrderStatus) {
           res.status(500);
           throw new Error(
             "Something went wrong updating order status to Delivered"
           );
         }
+
         res.status(200).json(updatedOrderStatus);
         break;
       }

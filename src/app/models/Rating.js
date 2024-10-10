@@ -2,14 +2,20 @@ const mongoose = require("mongoose");
 
 const ratingSchema = mongoose.Schema(
   {
+    product_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
+    product_type: {
+      type: String,
+      required: true,
+    },
+    product: {
+      type: Object,
+    },
     order_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
-      required: true,
-    },
-    plant_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Plant",
       required: true,
     },
     user_id: {

@@ -8,6 +8,10 @@ const orderSchema = mongoose.Schema(
       ref: "User",
       required: true,
     },
+    order_code: {
+      type: String,
+      required: true,
+    },
     payment_method: {
       type: String,
       required: true,
@@ -57,6 +61,12 @@ const orderSchema = mongoose.Schema(
     failed_delivery_note: {
       type: String,
     },
+    tracking_status_dates: [
+      {
+        key: { type: String, required: true },
+        value: { type: Date, required: true },
+      },
+    ],
     status: {
       type: String,
       required: true,

@@ -1,7 +1,7 @@
 const express = require("express");
 const ratingRouter = express.Router();
 const {
-  getAllRatingsForPlant,
+  getAllRatingsForProduct,
   createRating,
   updateRatingById,
   deleteRatingById,
@@ -20,13 +20,13 @@ const {
 
 /**
  * @swagger
- * /api/ratings/{plant_id}:
+ * /api/ratings/{product_id}:
  *   get:
  *     summary: Get all ratings for a plant
  *     tags: [Ratings]
  *     parameters:
  *       - in: path
- *         name: plant_id
+ *         name: product_id
  *         schema:
  *           type: string
  *         required: true
@@ -37,7 +37,7 @@ const {
  *       500:
  *         description: Server error
  */
-ratingRouter.get("/:plant_id", getAllRatingsForPlant);
+ratingRouter.get("/:product_id", getAllRatingsForProduct);
 
 ratingRouter.use(validateTokenCustomer);
 
@@ -82,7 +82,10 @@ ratingRouter.get("/order/:order_id", getAllRatingsOfOrder);
  *               order_id:
  *                 type: string
  *                 description: The order id
- *               plant_id:
+ *               product_id:
+ *                 type: string
+ *                 description: The plant id
+ *               product_type:
  *                 type: string
  *                 description: The plant id
  *               star:
