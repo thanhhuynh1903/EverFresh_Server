@@ -62,10 +62,10 @@ const {
  *           description: User's account status
  *       example:
  *         name: John Doe
- *         email: john@example.com
- *         password: password123
- *         role: Customer
- *         status: true
+ *         avatar_url: "avatar_url"
+ *         dob: "2024-10-10"
+ *         country: "Viet Nam"
+ *         gender: Male
  *
  *   securitySchemes:
  *     bearerAuth:
@@ -96,8 +96,26 @@ userRouter.use(validateToken);
  *         description: List of all users
  *       403:
  *         description: Forbidden
+ *   put:
+ *     summary: Update user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: User not found
  */
-userRouter.route("/").get(getUsers);
+userRouter.route("/").get(getUsers).put(updateUsers);
 
 /**
  * @swagger
@@ -182,31 +200,6 @@ userRouter
  *         description: Forbidden
  *       404:
  *         description: User not found
- *   put:
- *     summary: Update user
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: User ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/User'
- *     responses:
- *       200:
- *         description: User updated successfully
- *       403:
- *         description: Forbidden
- *       404:
- *         description: User not found
  *   delete:
  *     summary: Delete user (Admin only)
  *     tags: [Users]
@@ -227,7 +220,7 @@ userRouter
  *       404:
  *         description: User not found
  */
-userRouter.route("/:id").get(getUserById).put(updateUsers).delete(deleteUsers);
+userRouter.route("/:id").get(getUserById).delete(deleteUsers);
 
 /**
  * @swagger

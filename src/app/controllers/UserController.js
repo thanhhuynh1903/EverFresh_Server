@@ -77,7 +77,7 @@ const getUserById = asyncHandler(async (req, res, next) => {
 //@access private
 const updateUsers = asyncHandler(async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.user.id);
     if (!user) {
       res.status(404);
       throw new Error("User Not Found!");
@@ -88,21 +88,18 @@ const updateUsers = asyncHandler(async (req, res, next) => {
       throw new Error("You don't have permission to update user's profile");
     }
 
-    const { name, avatar_url, dob, country } = req.body;
+    const { name, avatar_url, dob, country, gender } = req.body;
     const updateFields = {
       name: name !== undefined ? name : user.name,
       avatar_url: avatar_url !== undefined ? avatar_url : user.avatar_url,
       dob: dob !== undefined ? dob : user.dob,
       country: country !== undefined ? country : user.country,
+      gender: gender !== undefined ? gender : user.gender,
     };
 
-    const updateUser = await User.findByIdAndUpdate(
-      req.params.id,
-      updateFields,
-      {
-        new: true,
-      }
-    );
+    const updateUser = await User.findByIdAndUpdate(req.user.id, updateFields, {
+      new: true,
+    });
 
     res.status(200).json(updateUser);
   } catch (error) {
