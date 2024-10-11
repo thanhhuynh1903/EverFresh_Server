@@ -336,7 +336,10 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
           }
         });
 
-        res.status(201).json(newOrder);
+        // res.status(200).json(upRankCustomer);
+        res.render("success_vnpay", {
+          vnp_TransactionNo: req.query.orderId,
+        });
       } else {
         const upRankCustomer = await User.findByIdAndUpdate(
           customer_id,
@@ -725,7 +728,10 @@ const paymentStripeCallback = asyncHandler(async (req, res) => {
           }
         });
 
-        res.status(201).json(newOrder);
+        // res.status(201).json(newOrder);
+        res.render("success_vnpay", {
+          vnp_TransactionNo: result.metadata.order_id,
+        });
       } else {
         const upRankCustomer = await User.findByIdAndUpdate(
           customer_id,
@@ -913,11 +919,18 @@ const paymentStripeIntent = asyncHandler(async (req, res) => {
       },
     });
 
-    res.status(201).json({
-      paymentIntent: paymentIntent.client_secret,
-      ephemeralKey: ephemeralKey.secret,
-      customer: customer.id,
-      publishableKey: process.env.STRIPE_PUBLISH_KEY,
+    // res.status(201).json({
+    //   paymentIntent: paymentIntent.client_secret,
+    //   ephemeralKey: ephemeralKey.secret,
+    //   customer: customer.id,
+    //   publishableKey: process.env.STRIPE_PUBLISH_KEY,
+    // });
+    res.render("success_vnpay", {
+      vnp_TransactionNo: `${req.user.id}-${
+        voucher_id || new Date().getTime().toString()
+      }-${delivery_method_id}-${deliveryInfo._id}-${cart_id}-${new Date()
+        .getTime()
+        .toString()}`,
     });
   } catch (error) {
     res
