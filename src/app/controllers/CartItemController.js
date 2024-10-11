@@ -65,6 +65,12 @@ const createCartItem = asyncHandler(async (req, res) => {
 
           res.status(201).json(newCartItem);
         } else {
+          if (checkExistCartItem.quantity >= 5) {
+            res.status(400);
+            throw new Error(
+              "The maximum quantity of an item in the cart is 5. No more can be added."
+            );
+          }
           // Update the existing CartItem
           checkExistCartItem.quantity += quantity;
           checkExistCartItem.item_total_price += item_total_price;
@@ -117,6 +123,12 @@ const createCartItem = asyncHandler(async (req, res) => {
 
           res.status(201).json(newCartItem);
         } else {
+          if (checkExistCartItem.quantity >= 5) {
+            res.status(400);
+            throw new Error(
+              "The maximum quantity of an item in the cart is 5. No more can be added."
+            );
+          }
           // Update the existing CartItem
           checkExistCartItem.quantity += quantity;
           checkExistCartItem.item_total_price += item_total_price;
@@ -168,6 +180,12 @@ const createCartItem = asyncHandler(async (req, res) => {
 
           res.status(201).json(newCartItem);
         } else {
+          if (checkExistCartItem.quantity >= 5) {
+            res.status(400);
+            throw new Error(
+              "The maximum quantity of an item in the cart is 5. No more can be added."
+            );
+          }
           // Update the existing CartItem
           checkExistCartItem.quantity += quantity;
           checkExistCartItem.item_total_price += item_total_price;
@@ -220,6 +238,13 @@ const updateCartItem = asyncHandler(async (req, res) => {
     if (quantity < 0 || quantity === undefined) {
       res.status(400);
       throw new Error("Quantity not suitable");
+    }
+
+    if (quantity > 5) {
+      res.status(400);
+      throw new Error(
+        "The maximum quantity of an item in the cart is 5. No more can be added."
+      );
     }
 
     const cartItem = await CartItem.findOne({

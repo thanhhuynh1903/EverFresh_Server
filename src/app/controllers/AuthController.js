@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const RoleEnum = require("../../enum/RoleEnum");
 const Gallery = require("../models/Gallery");
 const Cart = require("../models/Cart");
+const { jwtDecode } = require("jwt-decode");
 
 //@desc Register New user
 //@route POST /api/users/register
@@ -79,6 +80,78 @@ const registerUser = asyncHandler(async (req, res, next) => {
     });
 
     res.status(200).json({ accessToken });
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
+const loginGoogle = asyncHandler(async (req, res) => {
+  const { token } = req.body;
+  const googlePayload = jwtDecode(token);
+  try {
+    const user = await User.findOne({ email: googlePayload.email });
+    if (user) {
+      if (!user.status) {
+        throw new BadRequestException(
+          "Tài khoản của bạn đã bị khóa. Hãy liên hệ với admin để mở khóa!"
+        );
+      }
+
+      const accessToken = jwt.sign(
+        {
+          user: {
+            fullName: user.name,
+            email: user.email,
+            roleName: user.role,
+            avatar_url: user.avatar_url,
+            id: user.id,
+          },
+        },
+        process.env.ACCESS_TOKEN_SECRET,
+        { expiresIn: "1d" }
+      );
+
+      res.status(200).json({ accessToken });
+    } else {
+      const newUser = await User.create({
+        email: googlePayload.email,
+        name: googlePayload.name,
+        avatar_url: googlePayload.picture,
+        role: RoleEnum.CUSTOMER,
+      });
+      await Cart.create({
+        list_cart_item_id: [],
+        user_id: newUser._id,
+        total_price: 0,
+      });
+      await Gallery.create({
+        list_collection_id: [],
+        user_id: newUser._id,
+      });
+      if (!newUser) {
+        res.status(500);
+        throw new Error(
+          "Có lỗi xảy ra khi tạo người dùng mới. Vui lòng kiểm tra lại thông tin"
+        );
+      }
+
+      const accessToken = jwt.sign(
+        {
+          user: {
+            name: newUser.name,
+            email: newUser.email,
+            roleName: newUser.role,
+            avatar_url: newUser.avatar_url,
+            id: newUser.id,
+          },
+        },
+        process.env.ACCESS_TOKEN_SECRET,
+        { expiresIn: "1d" }
+      );
+      res.status(200).json({ accessToken });
+    }
   } catch (error) {
     res
       .status(res.statusCode || 500)
@@ -177,4 +250,4 @@ const logout = (req, res) => {
   }
 };
 
-module.exports = { registerUser, login, logout };
+module.exports = { registerUser, login, loginGoogle, logout };
