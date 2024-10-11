@@ -13,11 +13,19 @@ const {
   statisticsAccountByStatus,
   searchAccountByEmail,
   banAccountByAdmin,
+  unBanAccountByAdmin,
 } = require("../app/controllers/UserController");
 const {
   validateToken,
   validateTokenAdmin,
 } = require("../app/middleware/validateTokenHandler");
+
+/**
+ * @swagger
+ * tags:
+ *   name: Users
+ *   description: User management API
+ */
 
 /**
  * @swagger
@@ -31,54 +39,51 @@ const {
  *       properties:
  *         name:
  *           type: string
- *           description: User's name
+ *           maxLength: 255
+ *           description: "User's full name"
  *         dob:
  *           type: string
  *           format: date
- *           description: User's date of birth
+ *           description: "User's date of birth"
  *         email:
  *           type: string
- *           description: User's email address
+ *           maxLength: 255
+ *           description: "User's email address"
  *         phone_number:
  *           type: string
- *           description: User's phone number
- *         gender:
- *           type: string
- *           description: User's gender
+ *           maxLength: 10
+ *           description: "User's phone number"
  *         country:
  *           type: string
- *           description: User's country
+ *           description: "User's country of residence"
+ *         gender:
+ *           type: string
+ *           description: "User's gender"
  *         password:
  *           type: string
- *           description: User's password
+ *           description: "User's password"
  *         avatar_url:
  *           type: string
- *           description: URL to user's avatar
+ *           description: "URL of the user's avatar image"
+ *         rank:
+ *           type: string
+ *           default: "NORMAL"
+ *           description: "User's rank (e.g., NORMAL, ADMIN)"
  *         role:
  *           type: string
- *           description: User's role
+ *           description: "User's role in the application"
  *         status:
  *           type: boolean
- *           description: User's account status
- *       example:
- *         name: John Doe
- *         avatar_url: "avatar_url"
- *         dob: "2024-10-10"
- *         country: "Viet Nam"
- *         gender: Male
- *
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
- */
-
-/**
- * @swagger
- * tags:
- *   name: Users
- *   description: User management API
+ *           default: true
+ *           description: "Indicates if the user account is active"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "User account creation timestamp"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "User account last update timestamp"
  */
 
 userRouter.use(validateToken);
@@ -106,7 +111,25 @@ userRouter.use(validateToken);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/User'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 maxLength: 255
+ *                 description: "User's full name"
+ *               dob:
+ *                 type: string
+ *                 format: date
+ *                 description: "User's date of birth"
+ *               country:
+ *                 type: string
+ *                 description: "User's country of residence"
+ *               gender:
+ *                 type: string
+ *                 description: "User's gender"
+ *               avatar_url:
+ *                 type: string
+ *                 description: "URL of the user's avatar image"
  *     responses:
  *       200:
  *         description: User updated successfully
@@ -327,5 +350,34 @@ userRouter.route("/changePassword/:id").put(changePassword);
 userRouter
   .route("/banAccountByAdmin/:account_id")
   .patch(validateTokenAdmin, banAccountByAdmin);
+
+/**
+ * @swagger
+ * /api/users/unBanAccountByAdmin/{account_id}:
+ *   patch:
+ *     summary: UnBan a user account (Admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: account_id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Account ID to unBan
+ *     responses:
+ *       200:
+ *         description: Account unBanned successfully
+ *       400:
+ *         description: Cannot unBan admin account
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Account not found
+ */
+userRouter
+  .route("/unBanAccountByAdmin/:account_id")
+  .patch(validateTokenAdmin, unBanAccountByAdmin);
 
 module.exports = userRouter;

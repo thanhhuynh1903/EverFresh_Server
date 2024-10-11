@@ -275,7 +275,41 @@ const banAccountByAdmin = asyncHandler(async (req, res, next) => {
       res.status(400);
       throw new Error("Không thể khóa tài khoản admin");
     }
+    if (!user.status) {
+      res.status(400);
+      throw new Error("Tài khoản đang bị khóa");
+    }
     user.status = false;
+    const result = await user.save();
+    if (!result) {
+      res.status(500);
+      throw new Error("Có lỗi xảy ra khi khóa tài khoản");
+    }
+    res.status(200).json(result);
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
+const unBanAccountByAdmin = asyncHandler(async (req, res, next) => {
+  try {
+    const { account_id } = req.params;
+    const user = await User.findById(account_id).exec();
+    if (!user) {
+      res.status(404);
+      throw new Error("Không tìm thấy tài khoản!");
+    }
+    if (user.role === RoleEnum.ADMIN) {
+      res.status(400);
+      throw new Error("Không thể khóa tài khoản admin");
+    }
+    if (user.status) {
+      res.status(400);
+      throw new Error("Tài khoản không bị khóa");
+    }
+    user.status = true;
     const result = await user.save();
     if (!result) {
       res.status(500);
@@ -300,4 +334,5 @@ module.exports = {
   statisticsAccountByStatus,
   searchAccountByEmail,
   banAccountByAdmin,
+  unBanAccountByAdmin,
 };

@@ -18,6 +18,46 @@ const router = express.Router();
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     Notification:
+ *       type: object
+ *       required:
+ *         - user_id
+ *         - is_new
+ *         - is_read
+ *         - description
+ *         - type
+ *       properties:
+ *         user_id:
+ *           type: string
+ *           description: "User ObjectId associated with the notification"
+ *         is_new:
+ *           type: boolean
+ *           description: "Indicates if the notification is new"
+ *           default: true
+ *         is_read:
+ *           type: boolean
+ *           description: "Indicates if the notification has been read"
+ *           default: false
+ *         description:
+ *           type: string
+ *           description: "Description or content of the notification"
+ *         type:
+ *           type: string
+ *           description: "Type of notification (e.g., new_plant, order_complete)"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Creation time of the notification"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Last update time of the notification"
+ */
+
+/**
+ * @swagger
  * /api/notifications:
  *   get:
  *     summary: Get all notifications of the logged-in user (Customer Only)

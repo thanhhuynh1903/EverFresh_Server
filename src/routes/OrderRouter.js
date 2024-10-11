@@ -27,6 +27,95 @@ const orderRouter = express.Router();
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     Order:
+ *       type: object
+ *       required:
+ *         - customer_id
+ *         - order_code
+ *         - payment_method
+ *         - delivery_method
+ *         - delivery_information
+ *         - total_price
+ *         - list_cart_item_id
+ *         - status
+ *       properties:
+ *         customer_id:
+ *           type: string
+ *           description: "ObjectId reference to the User (customer) placing the order"
+ *         order_code:
+ *           type: string
+ *           description: "Unique order code"
+ *         payment_method:
+ *           type: string
+ *           description: "Payment method used for the order"
+ *         voucher_id:
+ *           type: string
+ *           description: "ObjectId reference to the Voucher (if applicable)"
+ *         delivery_method:
+ *           type: object
+ *           properties:
+ *             delivery_method_name:
+ *               type: string
+ *               description: "Name of the delivery method"
+ *             price:
+ *               type: number
+ *               description: "Price of the delivery method"
+ *         delivery_information:
+ *           type: object
+ *           properties:
+ *             phone_number:
+ *               type: string
+ *               description: "Phone number for delivery"
+ *             address:
+ *               type: string
+ *               description: "Main address for delivery"
+ *             address_detail:
+ *               type: string
+ *               description: "Detailed address for delivery"
+ *         total_price:
+ *           type: number
+ *           description: "Total price of the order"
+ *         list_cart_item_id:
+ *           type: array
+ *           items:
+ *             type: string
+ *             description: "Array of CartItem ObjectId references"
+ *         delivered_date:
+ *           type: string
+ *           format: date-time
+ *           description: "Date the order was delivered (if applicable)"
+ *         failed_delivery_note:
+ *           type: string
+ *           description: "Note explaining why the delivery failed (if applicable)"
+ *         tracking_status_dates:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               key:
+ *                 type: string
+ *                 description: "Tracking status key"
+ *               value:
+ *                 type: string
+ *                 format: date-time
+ *                 description: "Date of the status change"
+ *         status:
+ *           type: string
+ *           description: "Current status of the order (e.g., pending, delivered, failed)"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Order creation timestamp"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Order last update timestamp"
+ */
+
+/**
+ * @swagger
  * tags:
  *   name: Order
  *   description: API for managing Order

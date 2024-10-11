@@ -22,6 +22,32 @@ const {
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     DeliveryMethod:
+ *       type: object
+ *       required:
+ *         - delivery_method_name
+ *         - price
+ *       properties:
+ *         delivery_method_name:
+ *           type: string
+ *           description: "Name of the delivery method"
+ *         price:
+ *           type: number
+ *           description: "Price for the delivery method"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Creation time of the delivery method"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Last update time of the delivery method"
+ */
+
+/**
+ * @swagger
  * /api/delivery-methods:
  *   get:
  *     summary: Get all delivery methods

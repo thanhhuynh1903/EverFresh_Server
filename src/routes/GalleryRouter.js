@@ -14,6 +14,34 @@ const {
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     Gallery:
+ *       type: object
+ *       required:
+ *         - list_collection_id
+ *         - user_id
+ *       properties:
+ *         list_collection_id:
+ *           type: array
+ *           items:
+ *             type: string
+ *             description: "Array of Collection ObjectId references"
+ *         user_id:
+ *           type: string
+ *           description: "User ObjectId who owns the gallery"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Creation time of the gallery"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Last update time of the gallery"
+ */
+
+/**
+ * @swagger
  * /api/galleries:
  *   get:
  *     summary: Get all galleries

@@ -22,6 +22,46 @@ cartItemRouter.use(validateToken);
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     CartItem:
+ *       type: object
+ *       required:
+ *         - product_id
+ *         - product_type
+ *         - quantity
+ *         - item_total_price
+ *       properties:
+ *         product_id:
+ *           type: string
+ *           description: "ObjectId of the product"
+ *         product_type:
+ *           type: string
+ *           description: "Type of the product (e.g., Planter, Plant)"
+ *         product:
+ *           type: object
+ *           description: "Details of the product"
+ *         custom_color:
+ *           type: string
+ *           description: "Custom color selected by the user"
+ *         quantity:
+ *           type: number
+ *           description: "Quantity of the product"
+ *         item_total_price:
+ *           type: number
+ *           description: "Total price for the quantity of the product"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Creation time of the cart item"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Last update time of the cart item"
+ */
+
+/**
+ * @swagger
  * /api/cart-items:
  *   post:
  *     summary: Add a new cart item (Customer Only)

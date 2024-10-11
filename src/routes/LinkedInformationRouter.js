@@ -20,6 +20,44 @@ const {
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     LinkedInformation:
+ *       type: object
+ *       required:
+ *         - user_id
+ *         - author
+ *         - card_number
+ *         - expiration_date
+ *         - cvv
+ *       properties:
+ *         user_id:
+ *           type: string
+ *           description: "User ObjectId associated with this linked information"
+ *         author:
+ *           type: string
+ *           description: "Cardholder's name"
+ *         card_number:
+ *           type: string
+ *           description: "Unique card number"
+ *         expiration_date:
+ *           type: string
+ *           description: "Expiration date of the card"
+ *         cvv:
+ *           type: string
+ *           description: "CVV security code of the card"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Creation time of the linked information"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Last update time of the linked information"
+ */
+
+/**
+ * @swagger
  * /api/linked-information:
  *   get:
  *     summary: Get all linked information for a customer

@@ -26,6 +26,28 @@ genusRouter.use(validateTokenAdmin);
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     Genus:
+ *       type: object
+ *       required:
+ *         - name
+ *       properties:
+ *         name:
+ *           type: string
+ *           description: "Name of the genus"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Creation time of the genus"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Last update time of the genus"
+ */
+
+/**
+ * @swagger
  * tags:
  *   name: Genus
  *   description: API for managing genus (Admin only)

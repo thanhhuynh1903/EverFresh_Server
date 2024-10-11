@@ -26,6 +26,28 @@ plantTypeRouter.use(validateTokenAdmin); // All routes require admin access
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     PlantType:
+ *       type: object
+ *       required:
+ *         - plant_type_name
+ *       properties:
+ *         plant_type_name:
+ *           type: string
+ *           description: "Name of plant type"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Creation time of plant type"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Last update time of plant type"
+ */
+
+/**
+ * @swagger
  * tags:
  *   name: PlantType
  *   description: API for managing plant types (Admin only)

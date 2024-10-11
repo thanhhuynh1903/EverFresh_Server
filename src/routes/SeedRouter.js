@@ -125,7 +125,7 @@ const seedRouter = express.Router();
  *           type: string
  *           description: Size of the seed
  *         price:
- *           type: string
+ *           type: number
  *           description: Price of the seed
  *       example:
  *         name: "Rose"
@@ -154,7 +154,7 @@ const seedRouter = express.Router();
  *         humidity: "Moderate"
  *         fertilizer: "Use balanced fertilizer monthly"
  *         size: "Medium"
- *         price: "150000"
+ *         price: 150000
  */
 
 /**

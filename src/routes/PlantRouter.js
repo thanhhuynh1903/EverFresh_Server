@@ -125,7 +125,7 @@ const PlantRouter = express.Router();
  *           type: string
  *           description: Size of the plant
  *         price:
- *           type: string
+ *           type: number
  *           description: Price of the plant
  *       example:
  *         name: "Rose"
@@ -154,7 +154,7 @@ const PlantRouter = express.Router();
  *         humidity: "Moderate"
  *         fertilizer: "Use balanced fertilizer monthly"
  *         size: "Medium"
- *         price: "240000"
+ *         price: 240000
  */
 
 /**
@@ -263,7 +263,7 @@ PlantRouter.route("/:plant_id")
    *       content:
    *         application/json:
    *           schema:
-   *             $ref: '#/components/schemas/Seed'
+   *             $ref: '#/components/schemas/Plant'
    *     responses:
    *       200:
    *         description: Plant updated successfully

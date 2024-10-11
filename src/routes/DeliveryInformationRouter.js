@@ -24,6 +24,44 @@ deliveryInformationRouter.use(validateTokenCustomer);
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     DeliveryInformation:
+ *       type: object
+ *       required:
+ *         - phone_number
+ *         - address
+ *         - address_detail
+ *         - is_default
+ *         - user_id
+ *       properties:
+ *         phone_number:
+ *           type: string
+ *           description: "Phone number for delivery"
+ *         address:
+ *           type: string
+ *           description: "Main address for delivery"
+ *         address_detail:
+ *           type: string
+ *           description: "Detailed address information"
+ *         is_default:
+ *           type: boolean
+ *           description: "Whether this is the default delivery address"
+ *         user_id:
+ *           type: string
+ *           description: "ObjectId reference to the User"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Creation time of the delivery information"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Last update time of the delivery information"
+ */
+
+/**
+ * @swagger
  * /api/delivery-information:
  *   get:
  *     summary: Get all delivery information for the logged-in customer

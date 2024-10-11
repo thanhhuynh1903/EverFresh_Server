@@ -18,6 +18,38 @@ const {
  *   description: Collection management (Customer only)
  */
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Collection:
+ *       type: object
+ *       required:
+ *         - list_plant_id
+ *         - collection_name
+ *         - collection_img
+ *       properties:
+ *         list_plant_id:
+ *           type: array
+ *           items:
+ *             type: string
+ *             description: "Array of Plant ObjectId references"
+ *         collection_name:
+ *           type: string
+ *           description: "Unique name of the collection"
+ *         collection_img:
+ *           type: string
+ *           description: "Image URL of the collection"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Creation time of the collection"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Last update time of the collection"
+ */
+
 collectionRouter.use(validateTokenCustomer);
 
 /**

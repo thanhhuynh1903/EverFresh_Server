@@ -20,6 +20,51 @@ const {
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     Rating:
+ *       type: object
+ *       required:
+ *         - product_id
+ *         - product_type
+ *         - order_id
+ *         - user_id
+ *         - star
+ *         - comment
+ *       properties:
+ *         product_id:
+ *           type: string
+ *           description: "ObjectId reference to the rated product"
+ *         product_type:
+ *           type: string
+ *           description: "Type of the rated product (e.g., planter, seed)"
+ *         product:
+ *           type: object
+ *           description: "Product details (optional)"
+ *         order_id:
+ *           type: string
+ *           description: "ObjectId reference to the order containing the product"
+ *         user_id:
+ *           type: string
+ *           description: "ObjectId reference to the user who rated"
+ *         star:
+ *           type: string
+ *           description: "Rating star value (e.g., 1-5)"
+ *         comment:
+ *           type: string
+ *           description: "User's comment about the product"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Rating creation timestamp"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Rating last update timestamp"
+ */
+
+/**
+ * @swagger
  * /api/ratings/{product_id}:
  *   get:
  *     summary: Get all ratings for a plant

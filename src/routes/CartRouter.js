@@ -23,6 +23,38 @@ cartRouter.use(validateTokenCustomer); // Ensure customer-only access
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     Cart:
+ *       type: object
+ *       required:
+ *         - list_cart_item_id
+ *         - user_id
+ *         - total_price
+ *       properties:
+ *         list_cart_item_id:
+ *           type: array
+ *           items:
+ *             type: string
+ *             description: "Array of CartItem ObjectId references"
+ *         user_id:
+ *           type: string
+ *           description: "User ObjectId"
+ *         total_price:
+ *           type: number
+ *           description: "Total price of the cart"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Creation time"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Last update time"
+ */
+
+/**
+ * @swagger
  * /api/cart:
  *   post:
  *     summary: Create a new cart for the logged-in customer

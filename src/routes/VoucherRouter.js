@@ -24,6 +24,62 @@ const {
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     Voucher:
+ *       type: object
+ *       required:
+ *         - voucher_code
+ *         - voucher_name
+ *         - description
+ *         - start_day
+ *         - end_day
+ *         - is_percent
+ *         - voucher_discount
+ *         - quantity
+ *         - status
+ *       properties:
+ *         voucher_code:
+ *           type: string
+ *           description: "Unique code for the voucher"
+ *         voucher_name:
+ *           type: string
+ *           description: "Name of the voucher"
+ *         description:
+ *           type: string
+ *           description: "Description of the voucher"
+ *         start_day:
+ *           type: string
+ *           format: date
+ *           description: "Start date for the voucher's validity"
+ *         end_day:
+ *           type: string
+ *           format: date
+ *           description: "End date for the voucher's validity"
+ *         is_percent:
+ *           type: boolean
+ *           description: "Indicates if the discount is a percentage"
+ *         voucher_discount:
+ *           type: number
+ *           description: "Discount amount or percentage value"
+ *         quantity:
+ *           type: number
+ *           description: "Total quantity of vouchers available"
+ *         status:
+ *           type: string
+ *           description: "Current status of the voucher (e.g., active, expired)"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Voucher creation timestamp"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: "Voucher last update timestamp"
+ */
+
+/**
+ * @swagger
  * /api/vouchers:
  *   get:
  *     summary: Get all vouchers
