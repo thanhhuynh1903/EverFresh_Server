@@ -6,6 +6,7 @@ const {
   paymentStripeCallback,
   createUpRankMoMoPaymentUrl,
   createUpRankStripePaymentUrl,
+  paymentStripeIntent,
 } = require("../app/controllers/PaymentController");
 const {
   validateTokenCustomer,
@@ -188,5 +189,52 @@ router.post(
  *         description: Internal server error
  */
 router.get("/stripe/paymentCallBack", paymentStripeCallback);
+
+/**
+ * @swagger
+ * /api/payment/stripe/payment-sheet:
+ *   post:
+ *     summary: Create a Stripe payment URL
+ *     description: Create a payment request to MoMo for the logged-in customer
+ *     tags: [Payment]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               voucher_id:
+ *                 type: string
+ *                 description: Optional voucher ID
+ *               delivery_method_id:
+ *                 type: string
+ *                 description: Required delivery method ID
+ *               delivery_information_id:
+ *                 type: string
+ *                 description: Optional delivery information ID (defaults to user's default)
+ *               linked_information_id:
+ *                 type: string
+ *                 description: Linked Information ID
+ *               cart_id:
+ *                 type: string
+ *                 description: Required cart ID
+ *     responses:
+ *       200:
+ *         description: Payment URL created successfully
+ *       400:
+ *         description: Bad request, missing fields
+ *       404:
+ *         description: Resource not found (Cart, Delivery Method, etc.)
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  "/stripe/payment-sheet",
+  validateTokenCustomer,
+  paymentStripeIntent
+);
 
 module.exports = router;

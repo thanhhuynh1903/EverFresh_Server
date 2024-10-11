@@ -501,8 +501,6 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
       });
     }
 
-    cart.list_cart_item_id.map((cart_item) => console.log(cart_item.product));
-
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: cart.list_cart_item_id.map((cart_item) => ({
@@ -752,6 +750,182 @@ const paymentStripeCallback = asyncHandler(async (req, res) => {
   }
 });
 
+const paymentStripeIntent = asyncHandler(async (req, res) => {
+  try {
+    const {
+      voucher_id,
+      delivery_method_id,
+      delivery_information_id,
+      cart_id,
+      linked_information_id,
+    } = req.body;
+    if (!delivery_method_id || !cart_id) {
+      res.status(400);
+      throw new Error("Delivery method, and cart ID are required");
+    }
+
+    const cart = await Cart.findById(cart_id).populate({
+      path: "list_cart_item_id",
+    });
+    if (!cart) {
+      res.status(404);
+      throw new Error("Cart not found");
+    }
+
+    if (cart.list_cart_item_id.length === 0) {
+      res.status(400);
+      throw new Error("Cart is empty");
+    }
+
+    const deliveryMethod = await DeliveryMethod.findById(delivery_method_id);
+    if (!deliveryMethod) {
+      res.status(404);
+      throw new Error("Delivery method not found");
+    }
+
+    let deliveryInfo;
+    if (delivery_information_id) {
+      deliveryInfo = await DeliveryInformation.findById(
+        delivery_information_id
+      ).populate("user_id");
+      if (!deliveryInfo) {
+        res.status(404);
+        throw new Error("Delivery information not found");
+      }
+    } else {
+      deliveryInfo = await DeliveryInformation.findOne({
+        user_id: req.user.id,
+        is_default: true,
+      }).populate("user_id");
+      if (!deliveryInfo) {
+        res.status(404);
+        throw new Error("You must add Delivery information to order");
+      }
+    }
+
+    let voucher = null;
+    if (voucher_id) {
+      voucher = await Voucher.findById(voucher_id);
+      if (!voucher) {
+        res.status(404);
+        throw new Error("Voucher not found");
+      }
+
+      if (voucher.status !== VoucherStatusEnum.VALID) {
+        res.status(400);
+        throw new Error("Voucher is InValid");
+      }
+    }
+
+    const linkedInformation = await LinkedInformation.findById(
+      linked_information_id
+    );
+    if (!linkedInformation) {
+      res.status(404);
+      throw new Error("Linked information not found");
+    }
+
+    // Tạo hoặc cập nhật customer trong Stripe
+    let customer = await stripe.customers.list({
+      email: req.user.email,
+      limit: 1,
+    });
+    if (customer.data.length > 0) {
+      customer = customer.data[0];
+    } else {
+      customer = await stripe.customers.create({
+        email: req.user.email,
+      });
+    }
+
+    const total_price = voucher
+      ? voucher.is_percent
+        ? cart.total_price -
+          (cart.total_price * voucher.voucher_discount) / 100 +
+          deliveryMethod.price
+        : cart.total_price - voucher.voucher_discount + deliveryMethod.price
+      : cart.total_price + deliveryMethod.price;
+
+    const newOrder = new Order({
+      order_code: `${req.user.id}-${
+        voucher_id || new Date().getTime().toString()
+      }-${delivery_method_id}-${deliveryInfo._id}-${cart_id}-${new Date()
+        .getTime()
+        .toString()}`,
+      customer_id: req.user.id,
+      payment_method: PaymentMethodEnum.STRIPE,
+      voucher_id: voucher ? voucher_id : null,
+      delivery_method: {
+        delivery_method_name: deliveryMethod.delivery_method_name,
+        price: deliveryMethod.price,
+      },
+      delivery_information: {
+        phone_number: deliveryInfo.phone_number,
+        address: deliveryInfo.address,
+        address_detail: deliveryInfo.address_detail,
+      },
+      total_price: total_price,
+      list_cart_item_id: cart.list_cart_item_id,
+      tracking_status_dates: [
+        {
+          key: "order_confirmed_date",
+          value: new Date(),
+        },
+      ],
+      status: OrderStatusEnum.CONFIRMED,
+    });
+
+    await newOrder.save();
+
+    cart.list_cart_item_id = [];
+    cart.total_price = 0;
+    await cart.save();
+
+    setImmediate(async () => {
+      try {
+        const notification = new Notification({
+          user_id: req.user.id,
+          description: "You have purchasing order",
+          type: NotificationTypeEnum.PURCHASING_ORDER,
+        });
+
+        await notification.save();
+
+        const userNotifications = await Notification.find({
+          user_id: req.user.id,
+        }).sort({ createdAt: -1 });
+        _io.emit(`notifications-${req.user.id}`, userNotifications);
+      } catch (error) {
+        console.error("Error sending notifications:", error);
+      }
+    });
+
+    const ephemeralKey = await stripe.ephemeralKeys.create(
+      { customer: customer.id },
+      { apiVersion: "2024-09-30.acacia" }
+    );
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: total_price,
+      currency: "vnd",
+      customer: customer.id,
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+
+    res.status(201).json({
+      paymentIntent: paymentIntent.client_secret,
+      ephemeralKey: ephemeralKey.secret,
+      customer: customer.id,
+      publishableKey: process.env.STRIPE_PUBLISH_KEY,
+    });
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
 module.exports = {
   createMoMoPaymentUrl,
   createUpRankMoMoPaymentUrl,
@@ -759,4 +933,5 @@ module.exports = {
   createStripePaymentUrl,
   createUpRankStripePaymentUrl,
   paymentStripeCallback,
+  paymentStripeIntent,
 };
