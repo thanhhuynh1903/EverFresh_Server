@@ -403,6 +403,55 @@ const deleteOrder = asyncHandler(async (req, res) => {
   }
 });
 
+const getNewestOrder = asyncHandler(async (req, res) => {
+  try {
+    const order = await Order.findOne({ customer_id: req.user.id })
+      .sort({ createdAt: -1 })
+      .limit(1);
+
+    if (!order) {
+      res.status(404);
+      throw new Error("Have no order");
+    }
+
+    res.status(200).json(order);
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
+const changeIsNewToFalse = asyncHandler(async (req, res) => {
+  try {
+    const order = await Order.findOne({ customer_id: req.user.id })
+      .sort({ createdAt: -1 })
+      .limit(1);
+
+    if (!order) {
+      res.status(404);
+      throw new Error("Have no order");
+    }
+
+    const updateOrder = await Order.findByIdAndUpdate(
+      order._id,
+      { is_new: false },
+      { new: true }
+    );
+
+    if (!updateOrder) {
+      res.status(500);
+      throw new Error("Something went wrong when updating order to old");
+    }
+
+    res.status(200).json(updateOrder);
+  } catch (error) {
+    res
+      .status(res.statusCode || 500)
+      .send(error.message || "Internal Server Error");
+  }
+});
+
 module.exports = {
   createOrder,
   getAllOrders,
@@ -411,4 +460,6 @@ module.exports = {
   changeOrderStatus,
   changeStatusToFailedDelivery,
   deleteOrder,
+  getNewestOrder,
+  changeIsNewToFalse,
 };

@@ -7,6 +7,8 @@ const {
   deleteOrder,
   changeOrderStatus,
   changeStatusToFailedDelivery,
+  getNewestOrder,
+  changeIsNewToFalse,
 } = require("../app/controllers/OrderController");
 const {
   validateTokenCustomer,
@@ -192,6 +194,44 @@ orderRouter.get("/", validateTokenCustomer, getAllOrders);
  *         description: Server error
  */
 orderRouter.get("/admin", validateTokenAdmin, getAllOrdersForAdmin);
+
+/**
+ * @swagger
+ * /api/orders/newest-order:
+ *   get:
+ *     summary: Get newest order  (Customer only)
+ *     description: Get newest order
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Get order successfully
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Server error
+ */
+orderRouter.get("/newest-order", validateTokenCustomer, getNewestOrder);
+
+/**
+ * @swagger
+ * /api/orders/order-to-old:
+ *   put:
+ *     summary: Update order to old  (Customer only)
+ *     description: Update order to old
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Get order successfully
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Server error
+ */
+orderRouter.put("/order-to-old", validateTokenCustomer, changeIsNewToFalse);
 
 /**
  * @swagger

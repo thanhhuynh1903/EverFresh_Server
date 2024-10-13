@@ -67,6 +67,11 @@ const orderSchema = mongoose.Schema(
         value: { type: Date, required: true },
       },
     ],
+    is_new: {
+      type: Boolean,
+      default: true,
+      required: true,
+    },
     status: {
       type: String,
       required: true,
