@@ -16,6 +16,7 @@ const ProductTypeEnum = require("../../enum/ProductTypeEnum");
 const PlanterCategoryEnum = require("../../enum/PlanterCategoryEnum");
 const NotificationTypeEnum = require("../../enum/NotificationTypeEnum");
 const Notification = require("../models/Notification");
+const { sendMailOrderCompleted } = require("../../utils/SendMail");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
@@ -48,9 +49,11 @@ const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
 
     let deliveryInfo;
     if (delivery_information_id) {
-      deliveryInfo = await DeliveryInformation.findById(
-        delivery_information_id
-      );
+      deliveryInfo = await DeliveryInformation.findOne({
+        _id: delivery_information_id,
+        user_id: req.user.id,
+      });
+
       if (!deliveryInfo) {
         res.status(404);
         throw new Error("Delivery information not found");
@@ -278,6 +281,8 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
           }
         }
 
+        const sub_total_price = cart.total_price;
+
         const total_price = voucher
           ? voucher.is_percent
             ? cart.total_price -
@@ -331,12 +336,28 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
               user_id: customer_id,
             }).sort({ createdAt: -1 });
             _io.emit(`notifications-${customer_id}`, userNotifications);
+
+            const user = await User.findById(customer_id);
+            if (user.email) {
+              await sendMailOrderCompleted(
+                user.name,
+                user.email,
+                newOrder.order_code,
+                sub_total_price,
+                deliveryMethod.price,
+                voucher
+                  ? voucher.is_percent
+                    ? (sub_total_price * voucher.voucher_discount) / 100
+                    : voucher.voucher_discount
+                  : null,
+                total_price
+              );
+            }
           } catch (error) {
             console.error("Error sending notifications:", error);
           }
         });
 
-        // res.status(200).json(upRankCustomer);
         res.render("success_vnpay", {
           vnp_TransactionNo: req.query.orderId,
         });
@@ -400,9 +421,10 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
 
     let deliveryInfo;
     if (delivery_information_id) {
-      deliveryInfo = await DeliveryInformation.findById(
-        delivery_information_id
-      ).populate("user_id");
+      deliveryInfo = await DeliveryInformation.findOne({
+        _id: delivery_information_id,
+        user_id: req.user.id,
+      });
       if (!deliveryInfo) {
         res.status(404);
         throw new Error("Delivery information not found");
@@ -566,7 +588,6 @@ const createStripePaymentUrl = asyncHandler(async (req, res) => {
       cancel_url: `${process.env.ReturnStripePaymentUrl}?session_id={CHECKOUT_SESSION_ID}`,
     });
 
-    console.log(session);
     return res.json({ url: session.url });
   } catch (error) {
     res
@@ -623,7 +644,6 @@ const createUpRankStripePaymentUrl = asyncHandler(async (req, res) => {
       cancel_url: `${process.env.ReturnStripePaymentUrl}?session_id={CHECKOUT_SESSION_ID}`,
     });
 
-    console.log(session);
     return res.json({ url: session.url });
   } catch (error) {
     res
@@ -669,6 +689,8 @@ const paymentStripeCallback = asyncHandler(async (req, res) => {
             await voucher.save();
           }
         }
+
+        const sub_total_price = cart.total_price;
 
         const total_price = voucher
           ? voucher.is_percent
@@ -723,6 +745,23 @@ const paymentStripeCallback = asyncHandler(async (req, res) => {
               user_id: customer_id,
             }).sort({ createdAt: -1 });
             _io.emit(`notifications-${customer_id}`, userNotifications);
+
+            const user = await User.findById(customer_id);
+            if (user.email) {
+              await sendMailOrderCompleted(
+                user.name,
+                user.email,
+                newOrder.order_code,
+                sub_total_price,
+                deliveryMethod.price,
+                voucher
+                  ? voucher.is_percent
+                    ? (sub_total_price * voucher.voucher_discount) / 100
+                    : voucher.voucher_discount
+                  : null,
+                total_price
+              );
+            }
           } catch (error) {
             console.error("Error sending notifications:", error);
           }
@@ -844,6 +883,8 @@ const paymentStripeIntent = asyncHandler(async (req, res) => {
       });
     }
 
+    const sub_total_price = cart.total_price;
+
     const total_price = voucher
       ? voucher.is_percent
         ? cart.total_price -
@@ -901,6 +942,22 @@ const paymentStripeIntent = asyncHandler(async (req, res) => {
           user_id: req.user.id,
         }).sort({ createdAt: -1 });
         _io.emit(`notifications-${req.user.id}`, userNotifications);
+
+        if (req.user.email) {
+          await sendMailOrderCompleted(
+            req.user.name,
+            req.user.email,
+            newOrder.order_code,
+            sub_total_price,
+            deliveryMethod.price,
+            voucher
+              ? voucher.is_percent
+                ? (sub_total_price * voucher.voucher_discount) / 100
+                : voucher.voucher_discount
+              : null,
+            total_price
+          );
+        }
       } catch (error) {
         console.error("Error sending notifications:", error);
       }
