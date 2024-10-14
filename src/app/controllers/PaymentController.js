@@ -83,9 +83,11 @@ const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
     }
 
     const total_price = voucher
-      ? cart.total_price -
-        (cart.total_price * voucher.voucher_discount) / 100 +
-        deliveryMethod.price
+      ? voucher.is_percent
+        ? cart.total_price -
+          (cart.total_price * voucher.voucher_discount) / 100 +
+          deliveryMethod.price
+        : cart.total_price - voucher.voucher_discount + deliveryMethod.price
       : cart.total_price + deliveryMethod.price;
 
     // create momo url
@@ -154,6 +156,7 @@ const createMoMoPaymentUrl = asyncHandler(async (req, res) => {
       } else {
         console.error("Error:", error.message);
       }
+      console.log(error.message);
       throw new Error("Không thể tạo yêu cầu thanh toán MoMo");
     }
   } catch (error) {
