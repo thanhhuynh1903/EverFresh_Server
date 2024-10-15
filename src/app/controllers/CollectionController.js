@@ -45,9 +45,13 @@ const addPlantToFavorite = asyncHandler(async (req, res) => {
       throw new Error("Plant not found");
     }
 
-    const checkExistCollection = await Collection.findOne({
-      collection_name: "Favorite",
-    });
+    const gallery = await Gallery.findOne({ user_id: req.user.id }).populate(
+      "list_collection_id"
+    );
+
+    const checkExistCollection = gallery.list_collection_id.find(
+      (collection) => collection.collection_name == "Favorite"
+    );
 
     if (!checkExistCollection) {
       const newCollection = new Collection({
