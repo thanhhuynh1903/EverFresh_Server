@@ -406,6 +406,8 @@ const deleteOrder = asyncHandler(async (req, res) => {
 const getNewestOrder = asyncHandler(async (req, res) => {
   try {
     const order = await Order.findOne({ customer_id: req.user.id })
+      .populate("list_cart_item_id")
+      .populate("voucher_id")
       .sort({ createdAt: -1 })
       .limit(1);
 
