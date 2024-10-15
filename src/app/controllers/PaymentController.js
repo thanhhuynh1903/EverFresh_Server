@@ -375,7 +375,9 @@ const paymentMoMoCallback = asyncHandler(async (req, res) => {
           throw new Error("Something went wrong when upgrading customer rank");
         }
 
-        res.status(200).json(upRankCustomer);
+        res.render("success_vnpay", {
+          vnp_TransactionNo: req.query.orderId,
+        });
       }
     } else {
       res.status(400);
@@ -785,7 +787,9 @@ const paymentStripeCallback = asyncHandler(async (req, res) => {
           throw new Error("Something went wrong when upgrading customer rank");
         }
 
-        res.status(200).json(upRankCustomer);
+        res.render("success_vnpay", {
+          vnp_TransactionNo: result.metadata.order_id,
+        });
       }
     } else {
       res.status(400);
